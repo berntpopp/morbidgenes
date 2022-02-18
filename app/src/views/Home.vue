@@ -23,10 +23,6 @@
                 color="primary"
               ></v-progress-circular>
             </v-overlay>
-  
-            <p class="text-justify">
-              Search and filter the current MorbidGenes panel.
-            </p>
 
             <div class="pa-2">
                 <v-text-field
