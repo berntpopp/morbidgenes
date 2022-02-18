@@ -11,7 +11,7 @@ services:
    MYSQL_PASSWORD: 'morbidgenes-db'
    MYSQL_ROOT_PASSWORD: 'morbidgenes-db'
   ports:
-   - "6612:3306"
+   - "9918:3306"
   volumes:
    - /home/morbidgenes/morbidgenes_db/data/mysql/:/var/lib/mysql/
  api:
