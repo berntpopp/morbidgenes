@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+ mysql:
+  image: mysql:8
+  container_name: morbidgenes_mysql
+  command: mysqld --default-authentication-plugin=mysql_native_password
+  restart: always
+  environment:
+   MYSQL_DATABASE: 'morbidgenes_db'
+   MYSQL_USER: 'bernt'
+   MYSQL_PASSWORD: 'morbidgenes-db'
+   MYSQL_ROOT_PASSWORD: 'morbidgenes-db'
+  ports:
+   - "6612:3306"
+  volumes:
+   - /home/morbidgenes/morbidgenes_db/data/mysql/:/var/lib/mysql/
+ api:
+  build: ./api/
+  container_name: morbidgenes_api
+  command: Rscript /morbidgenes_api_volume/start_morbidgenes-db_api.R
+  restart: always
+  volumes:
+  - /home/morbidgenes/morbidgenes-db/api/:/morbidgenes_api_volume/
+  ports:
+     - "7779:7779"
+  environment:
+   PASSWORD: 'morbidgenes-db'
+ app:
+  build: ./app/
+  container_name: morbidgenes_app
+  restart: always
+  ports:
+     - "80:80"
+volumes:
+ morbidgenes_api_volume:
