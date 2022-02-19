@@ -20,7 +20,7 @@ services:
   command: Rscript /morbidgenes_api_volume/start_morbidgenes-db_api.R
   restart: always
   volumes:
-  - /home/morbidgenes/morbidgenes_db/api/:/morbidgenes_api_volume/
+  - /home/morbidgenes/morbidgenes/api/:/morbidgenes_api_volume/
   ports:
      - "10908-10917:10918"
   environment:
