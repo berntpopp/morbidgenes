@@ -11,7 +11,7 @@
       <img
         src="../public/morbidgenes_logo.png"
         height="50px"
-      />&nbsp;&nbsp;&nbsp;MorbidGenes
+      />
     </v-tab>
   </v-toolbar-title>
 
@@ -116,5 +116,3 @@
     }),
   }
 </script>
-
-<style> *{ text-transform: none !important; } </style>
