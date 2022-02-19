@@ -25,7 +25,7 @@
                     <v-expansion-panel-header>Citation policy</v-expansion-panel-header>
                     <v-expansion-panel-content>
                       <p>In addition to this website, the curret MorbidGenes panel can be cited using the Zenodo DOI:</p>
-                      <p><a href="https://doi.org/10.5281/zenodo.6136995"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6136995.svg" alt="DOI"></a></p>
+                      <p><a href="https://doi.org/10.5281/zenodo.6136995" target="_blank"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.6136995.svg" alt="DOI"></a></p>
                       <p>We are currently working on a manuscript describing development of MorbidGenes. Until then please cite above DOI if you use MorbidGenes in your work.</p>
                     </v-expansion-panel-content>
                   </v-expansion-panel>

@@ -39,12 +39,24 @@
 
                 <v-data-table
                   dense
-                  :items="variants"
+                  :items="panel"
                   :headers="headers"
                   :search="search"
                   item-key="name"
                   class="elevation-1"
-                ></v-data-table>
+                >
+                
+                <template v-slot:[`item.mg_score`]="{ item }">
+                  <v-chip
+                    :color="getColor(item.mg_score)"
+                    dark
+                    x-small
+                  >
+                    {{ item.mg_score }}
+                  </v-chip>
+                </template>
+
+                </v-data-table>
             </div>
             </v-sheet>
           </v-col>
@@ -59,7 +71,7 @@ export default {
   name: 'Tables',
   data() {
         return {
-          variants: [],
+          panel: [],
           headers:[
             { text:'Panel', value: 'panel_version' },
             { text:"HGNC ID", value:"hgnc_id" },
@@ -85,13 +97,18 @@ export default {
           let apiUrl = process.env.VUE_APP_API_URL + '/api/panel/';
           try {
             let response = await this.axios.get(apiUrl);
-            this.variants = response.data.data;
+            this.panel = response.data.data;
             this.totalRows = response.data.data.length;
           } catch (e) {
             console.error(e);
           }
           this.loading = false;
-        }
+        },
+        getColor (calories) {
+        if (calories < 3) return 'red'
+        else if (calories < 5) return 'orange'
+        else return 'green'
+      },
       }
   }
 </script>
