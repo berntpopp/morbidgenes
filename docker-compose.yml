@@ -22,7 +22,7 @@ services:
   volumes:
   - /home/morbidgenes/morbidgenes-db/api/:/morbidgenes_api_volume/
   ports:
-     - "7768-7778:7779"
+     - "10908-10917:10918"
   environment:
    PASSWORD: 'morbidgenes-db'
  alb:
