@@ -24,6 +24,10 @@
               ></v-progress-circular>
             </v-overlay>
 
+            <div class="text-lg-h6 pa-2">
+            MorbidGenes panel: a monthly updated  list of diagnostically relevant genes derived from diverse sources 
+            </div>
+
             <div class="pa-2">
                 <v-text-field
                   v-model="search"

@@ -101,11 +101,9 @@
   export default {
     data: () => ({
       items: [
-        {title: 'Scoring', to: '/scoring', id: 'scoring'},
         {title: 'About', to: '/about', id: 'about'},
       ],
       items_small: [
-        {title: 'Scoring', to: '/scoring', id: 'scoring'},
         {title: 'About', to: '/about', id: 'about'},
       ],
       footer_items: [
