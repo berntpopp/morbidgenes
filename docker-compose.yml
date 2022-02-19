@@ -2,7 +2,7 @@ version: '3.8'
 services:
  mysql:
   image: mysql:8
-  container_name: morbidgenes_mysql
+  container_name: mysql
   command: mysqld --default-authentication-plugin=mysql_native_password
   restart: always
   environment:
