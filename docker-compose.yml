@@ -22,14 +22,22 @@ services:
   volumes:
   - /home/morbidgenes/morbidgenes-db/api/:/morbidgenes_api_volume/
   ports:
-     - "7779:7779"
+     - "7768-7778:7779"
   environment:
    PASSWORD: 'morbidgenes-db'
+ alb:
+  image: 'dockercloud/haproxy'
+  links:
+     - api
+  volumes:
+     - /var/run/docker.sock:/var/run/docker.sock
+  restart: always
  app:
   build: ./app/
   container_name: morbidgenes_app
   restart: always
   ports:
      - "80:80"
+     - "443:443"
 volumes:
  morbidgenes_api_volume:
