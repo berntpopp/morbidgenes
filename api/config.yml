@@ -17,7 +17,7 @@ default:
     password: "morbidgenes-db"
     server: "0.0.0.0"
     host: "mysql"
-    port: "9918"
+    port: "3316"
     port_self: "10918"
     secret: QSnDcVt'Lg:8G+Q9LB,grz-~)tiZ|kr|X4m6nAd?'Pxv;w9PN9.uu$93a;9<PA4
     refresh: 3600
