@@ -9,7 +9,7 @@ export default {
   name: "Swagger",
   data() {
         return {
-          source: 'http://127.0.0.1:10918/__docs__/',
+          source: process.env.VUE_APP_API_URL + '/__docs__/',
         }
   }
 }
