@@ -16,7 +16,6 @@ services:
    - /home/morbidgenes/morbidgenes_db/data/mysql/:/var/lib/mysql/
  api:
   build: ./api/
-  container_name: morbidgenes_api
   command: Rscript /morbidgenes_api_volume/start_morbidgenes-db_api.R
   restart: always
   volumes:
