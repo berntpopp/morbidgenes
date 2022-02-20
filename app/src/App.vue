@@ -11,6 +11,7 @@
       <img
         src="../public/morbidgenes_logo.png"
         height="50px"
+        alt="MorbidGenes Logo"
       />
     </v-tab>
   </v-toolbar-title>
@@ -85,7 +86,7 @@
         :href="footer_item.to" 
         :target="footer_item.target"
         >
-          <v-icon size="24px">
+          <v-icon size="24px" aria-hidden="false">
             {{ footer_item.icon }}
           </v-icon>
         </v-btn>
@@ -107,9 +108,9 @@
         {title: 'About', to: '/about', id: 'about'},
       ],
       footer_items: [
-        {icon: 'mdi-github', to: 'https://github.com/berntpopp/morbidgenes', target: '_blank'},
-        {icon: 'mdi-api', to: '/API', target: '_self'},
-        {icon: 'mdi-copyright', to: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank'}
+        {icon: 'mdi-github', to: 'https://github.com/berntpopp/morbidgenes', target: '_blank', alt: 'GitHub repository'},
+        {icon: 'mdi-api', to: '/API', target: '_self', alt: 'OpenAPI Swagger frontend'},
+        {icon: 'mdi-copyright', to: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', alt: 'License'}
       ],
     }),
   }
