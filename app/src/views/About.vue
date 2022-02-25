@@ -41,6 +41,75 @@
                       Here we will present Help and FAQ once the website and API functionallity is complete.
                     </v-expansion-panel-content>
                 </v-expansion-panel>
+                  <v-expansion-panel>
+                    <v-expansion-panel-header>Impressum</v-expansion-panel-header>
+                    <v-expansion-panel-content>
+                     <v-btn
+                      text
+                      color="primary"
+                      @click="toggleLanguage"
+                    >
+                      {{language ? 'German' : 'English'}}
+                    </v-btn><br><br>
+                    <v-card
+                      elevation="2"
+                      v-if="language"
+                    >
+                      Gemäß § 28 BDSG widersprechen wir jeder kommerziellen Verwendung und Weitergabe der Daten.<br><br>
+
+                      Verantwortunsbereich:<br>
+                      Das Impressum gilt nur für die Internetpräsenz unter der Adresse: https://morbidgenes.org
+
+                      Abgrenzung:<br>
+                      Die Web-Präsenz ist Teil des WWW und dementsprechend mit fremden, sich jederzeit wandeln könnenden Web-Sites verknüpft, die folglich auch nicht diesem Verantwortungsbereich unterliegen und für die nachfolgende Informationen nicht gelten. Dass die Links weder gegen Sitten noch Gesetze verstoßen, wurde genau ein Mal geprüft (bevor sie hier aufgenommen wurden).<br><br>
+
+                      Diensteanbieter:<br>
+                      Bernt Popp<br><br>
+
+                      Ansprechpartner für die Webseite:<br>
+                      Bernt Popp (bernt.popp@medizin.uni-leipzig.de)<br><br>
+
+                      Verantwortlicher:<br>
+                      Bernt Popp (bernt.popp@medizin.uni-leipzig.de)<br><br>
+
+                      Anschrift:<br>
+                      Sekretariat<br>
+                      Philipp-Rosenthal-Str. 55<br>
+                      04103 Leipzig<br>
+                      Telefon: 0341 - 97 23800<br>
+
+                      Urheberschutz und Nutzung:<br>
+                      Der Urheber räumt Ihnen ganz konkret das Nutzungsrecht ein, sich eine private Kopie für persönliche Zwecke anzufertigen. Nicht berechtigt sind Sie dagegen, die Materialien zu verändern und/oder weiter zu geben oder gar selbst zu veröffentlichen. Wenn nicht ausdrücklich anders vermerkt, liegen die Urheberrechte bei Johann Lieberwirth Datenschutz Personenbezogene Daten werden nur mit Ihrem Wissen und Ihrer Einwilligung erhoben. Auf Antrag erhalten Sie unentgeltlich Auskunft zu den über Sie gespeicherten personenbezogenen Daten. Wenden Sie sich dazu bitte an den Administrator.<br><br>
+
+                      Keine Haftung:<br>
+                      Die Inhalte dieses Webprojektes wurden sorgfältig geprüft und nach bestem Wissen erstellt. Aber für die hier dargebotenen Informationen wird kein Anspruch auf Vollständigkeit, Aktualität, Qualität und Richtigkeit erhoben. Es kann keine Verantwortung für Schäden übernommen werden, die durch das Vertrauen auf die Inhalte dieser Website oder deren Gebrauch entstehen.<br><br>
+
+                      Schutzrechtsverletzung:<br>
+                      Falls Sie vermuten, dass von dieser Website aus eines Ihrer Schutzrechte verletzt wird, teilen Sie das bitte umgehend per elektronischer Post mit, damit zügig Abhilfe geschafft werden kann. Bitte nehmen Sie zur Kenntnis: Die zeitaufwändigere Einschaltung eines Anwaltes zur für den Diensteanbieter kostenpflichtigen Abmahnung entspricht nicht dessen wirklichen oder mutmaßlichen Willen.<br><br>
+
+                      lt. Urteil vom 12. Mai 1998 - 312 O 85/98 - "Haftung für Links" hat das Landgericht Hamburg entschieden, dass man durch die Anbringung eines Links, die Inhalte der gelinkten Seite ggf. mit zu verantworten hat. Dies kann nur dadurch verhindert werden, dass man sich ausdrücklich von diesen Inhalten distanziert. 'Hiermit distanzieren wir uns ausdrücklich von allen Inhalten aller gelinkten Seiten auf unserer Website und machen uns diese Inhalte nicht zu eigen. Diese Erklärung gilt für alle auf unsere Website angebrachten Links.'
+                    </v-card>
+                    <v-card
+                      elevation="2"
+                      v-if="!language"
+                    >
+                      The Institute for Human Genetics (University Medical Center Leipzig) makes no representation about the suitability or accuracy of this software or data for any purpose, and makes no warranties, including fitness for a particular purpose or that the use of this software will not infringe any third party patents, copyrights, trademarks or other rights.<br><br>
+
+                      Responsible for this website:<br>
+                      Bernt Popp (bernt.popp@medizin.uni-leipzig.de)<br><br>
+
+                      Responsible for this project:<br>
+                      Bernt Popp (bernt.popp@medizin.uni-leipzig.de)<br><br>
+
+                      Address:<br>
+                      Sekretariat<br>
+                      Philipp-Rosenthal-Str. 55<br>
+                      04103 Leipzig<br>
+                      GERMANY<br>
+                      Telefon: 0341 - 97 23800
+                    </v-card>
+                    </v-expansion-panel-content>
+                </v-expansion-panel>
               </v-expansion-panels>
             </div>
             </v-sheet>
@@ -49,3 +118,16 @@
         </v-row>
       </v-container>
 </template>
+
+<script>
+  export default {
+    data: () => ({
+      language: true
+    }),
+      methods: {
+        async toggleLanguage() {
+          this.language = !this.language;
+      },
+      }
+  }
+</script>
