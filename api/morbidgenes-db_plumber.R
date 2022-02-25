@@ -203,6 +203,46 @@ function(res, sort = "symbol", `page[after]` = 0, `page[size]` = "all") {
 
 
 #* @tag panel
+## get current panel for download as Excel file
+#* @serializer contentType list(type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+#' @get /api/panel/excel
+function(res) {
+
+	# get data from database
+	morbidgenes_current <- pool %>% 
+		tbl("view_panel_current") %>%
+		collect()
+
+	# generate request statistic for output
+	creation_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%dT %H:%M:%S")
+	
+	request_stats <- tibble(
+	  creation_date = creation_date
+	) %>%
+	pivot_longer(everything(), names_to = "request", values_to = "value")
+
+	# generate excel file output
+	filename <- file.path(tempdir(), "morbidgenes_current.xlsx")
+	write.xlsx(morbidgenes_current, filename, sheetName="morbidgenes_current", append=FALSE)
+	write.xlsx(request_stats, filename, sheetName="request", append=TRUE)
+	attachmentString = paste0("attachment; filename=morbidgenes_current.", creation_date, ".xlsx")
+
+	res$setHeader("Content-Disposition", attachmentString)
+
+	# Read in the raw contents of the binary file
+	bin <- readBin(filename, "raw", n=file.info(filename)$size)
+
+	#Check file existence and delete
+	if (file.exists(filename)) {
+		file.remove(filename)
+	}
+
+	#Return the binary contents
+	bin
+}
+
+
+#* @tag panel
 ## get infos for a single gene in the current panel by hgnc_id
 #* @serializer json list(na="string")
 #' @get /api/panel/<hgnc_id>
