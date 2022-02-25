@@ -28,6 +28,20 @@
             MorbidGenes panel: a monthly updated  list of diagnostically relevant genes derived from diverse sources 
             </div>
 
+            <div class="text-lg-h6 pa-2">
+              <v-btn block v-on:click="requestExcel" size="sm">
+                <v-icon v-if="!downloading">mdi-table-large</v-icon>
+                <v-icon v-if="!downloading">mdi-cloud-download</v-icon>
+                <v-progress-circular
+                  indeterminate
+                  color="primary"
+                  size="25"
+                  v-if="downloading"
+                ></v-progress-circular>
+                .xlsx
+              </v-btn>
+            </div>
+
             <div class="pa-2">
                 <v-text-field
                   v-model="search"
@@ -83,7 +97,8 @@ export default {
           absolute: true,
           opacity: 1,
           color: "#FFFFFF",
-          loading: true
+          loading: true,
+          downloading: false
         }
       },
       computed: {
@@ -103,6 +118,33 @@ export default {
             console.error(e);
           }
           this.loading = false;
+        },
+        async requestExcel() {
+          this.downloading = true;
+          //based on https://morioh.com/p/f4d331b62cda
+          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel/excel/';
+          try {
+            await this.axios({
+                    url: apiUrl,
+                    method: 'GET',
+                    responseType: 'blob',
+                }).then((response) => {
+                     var fileURL = window.URL.createObjectURL(new Blob([response.data]));
+                     var fileLink = document.createElement('a');
+
+                     fileLink.href = fileURL;
+                     fileLink.setAttribute('download', 'morbidgenes_current.xlsx');
+                     document.body.appendChild(fileLink);
+
+                     fileLink.click();
+                });
+
+          } catch (e) {
+            console.error(e);
+          }
+          
+          this.downloading = false;
+          
         },
         getColor (calories) {
         if (calories < 3) return 'red'

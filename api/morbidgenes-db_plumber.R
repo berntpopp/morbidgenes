@@ -205,7 +205,7 @@ function(res, sort = "symbol", `page[after]` = 0, `page[size]` = "all") {
 #* @tag panel
 ## get current panel for download as Excel file
 #* @serializer contentType list(type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-#' @get /api/panel/excel
+#' @get /api/panel/excel/
 function(res) {
 
 	# get data from database
