@@ -2,6 +2,8 @@
 # database config file
 #docker-compose.yml
 
+# Ignore the results directory in api folde
+api/results/
 
 ## R
 # History files
