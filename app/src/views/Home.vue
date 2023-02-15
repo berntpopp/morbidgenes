@@ -25,7 +25,7 @@
             </v-overlay>
 
             <div class="text-lg-h6 pa-2">
-            MorbidGenes panel: a monthly updated  list of diagnostically relevant genes derived from diverse sources 
+            MorbidGenes panel: a monthly updated list of relevant genes derived from diverse sources 
             </div>
 
             <div class="text-lg-h6 pa-2">

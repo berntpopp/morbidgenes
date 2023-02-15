@@ -1,0 +1,26 @@
+api:
+    build: ./api/
+    command: Rscript /morbidgenes_api_volume/start_morbidgenes-db_api.R
+    restart: always
+    volumes:
+    - /home/morbidgenes/morbidgenes/api/:/morbidgenes_api_volume/
+    ports:
+       - "10908-10917:10918"
+    environment:
+     PASSWORD: 'morbidgenes-db'
+   alb:
+    image: 'dockercloud/haproxy'
+    links:
+       - api
+    volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+   app:
+    build: ./app/
+    container_name: morbidgenes_app
+    restart: always
+    ports:
+       - "80:80"
+       - "443:443"
+  volumes:
+   morbidgenes_api_volume:
