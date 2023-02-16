@@ -106,14 +106,22 @@ function(req, res) {
 ## Panel endpoints
 
 #* @tag panel
-## get current panel
+## get specific panel version (default: current)
 #* @serializer json list(na="string")
 #' @get /api/panel/
-function(res, sort = "symbol", `page[after]` = 0, `page[size]` = "all") {
+function(res, sort = "symbol", `page[after]` = 0, `page[size]` = "all", version = "current") {
+
+	panel = if(version == "current"){
+		pool %>% 
+		tbl("view_panel_current")
+	} else{
+		pool %>% 
+		tbl("view_panel_all") %>% 
+		filter(panel_version == version)
+	}
 
 	# get number of rows in view_panel_current
-	morbidgenes_db_panel_current_rows <- (pool %>% 
-		tbl("view_panel_current") %>%
+	morbidgenes_db_panel_current_rows <- (panel %>% 
 		summarise(n = n()) %>%
 		collect()
 		)$n
@@ -142,8 +150,7 @@ function(res, sort = "symbol", `page[after]` = 0, `page[size]` = "all") {
 	}
 
 	# get data from database
-	morbidgenes_db_panel_current_table <- pool %>% 
-		tbl("view_panel_current") %>%
+	morbidgenes_db_panel_current_table <- panel %>% 
 		arrange(!!!syms(sort_list)) %>%
 		collect()
 

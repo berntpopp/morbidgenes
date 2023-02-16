@@ -45,3 +45,7 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+
+# DB Files
+db/morbidgenes_db
+db/morbidgenes_db/data/mysql/#ib_16384_0.dblwr
