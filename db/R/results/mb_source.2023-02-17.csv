@@ -1,0 +1,10 @@
+source_id,source_name,source_logic
+1,hgmd_pathogenic_cutoff,dummy
+2,clinvar_pathogenic_cutoff,dummy
+3,omim_phenotype,dummy
+4,panelapp,dummy
+5,panelapp_UK,dummy
+6,panelapp_australia,dummy
+7,gencc,dummy
+8,sysndd,dummy
+9,manually_added,dummy
