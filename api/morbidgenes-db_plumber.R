@@ -72,7 +72,7 @@ pool <- dbPool(
 #* @apiContact list(name = "API Support", url = "http://www.morbidgenes.org/support", email = "support@morbidgenes.org")
 #* @apiLicense list(name = "CC BY 4.0", url = "https://creativecommons.org/licenses/by/4.0/")
 
-#* @apiTag panel Endpoint to get the current MorbidGenes Panel
+#* @apiTag panel Endpoint to get the current or a specific panel version
 ##-------------------------------------------------------------------##
 ##-------------------------------------------------------------------##
 

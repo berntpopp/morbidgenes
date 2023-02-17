@@ -10,7 +10,7 @@ library(sqlr)		##needed for MySQL data export
 
 ############################################
 ## set working directory (needs to be adapted to your specific working directory)
-setwd("/home/MorbidGenes/00_DEV/morbidgenes/db/R")
+setwd("V:/Test/morbidgenes/db/R")
 ## set global options
 options(scipen = 999)
 ############################################
@@ -43,7 +43,7 @@ dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_jo
 ############################################
 ## make source_id in all tables compatible as int
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY source_id int NOT NULL;")
-dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int NOT NULL;");")
+dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int NOT NULL;");
 
 
 ############################################
@@ -92,41 +92,56 @@ dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel
     WHERE
         (`morbidgenes_db`.`mb_panel_version`.`is_current` = 1)")
 
+# view_panel_genes_all
+dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_all` AS
+    SELECT 
+        `morbidgenes_db`.`mb_panel_version`.`panel_id` AS `panel_id`,
+        `morbidgenes_db`.`mb_panel_version`.`panel_version` AS `panel_version`,
+        `morbidgenes_db`.`mb_panel_genes_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
+        `morbidgenes_db`.`mb_panel_genes_join`.`hgnc_id` AS `hgnc_id`
+    FROM
+        (`morbidgenes_db`.`mb_panel_version`
+        JOIN `morbidgenes_db`.`mb_panel_genes_join` ON ((`morbidgenes_db`.`mb_panel_version`.`panel_id` = `morbidgenes_db`.`mb_panel_genes_join`.`panel_id`)))")
+
 
 # view_panel_genes_source
 dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_source` AS
     SELECT 
         `morbidgenes_db`.`mb_panel_genes_source_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'PanelApp') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'panelapp') THEN 1
             ELSE 0
         END)) AS `PanelApp`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'AustraliaPanelApp') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'gencc') THEN 1
+            ELSE 0
+        END)) AS `GenCC`,
+        MAX((CASE
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'panelapp_australia') THEN 1
             ELSE 0
         END)) AS `AustraliaPanelApp`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'HGMD_pathogenic') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'hgmd_pathogenic_cutoff') THEN 1
             ELSE 0
         END)) AS `HGMD_pathogenic`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'Phenotype_MIM') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'omim_phenotype') THEN 1
             ELSE 0
         END)) AS `Phenotype_MIM`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'ClinVarPathogenic') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'clinvar_pathogenic_cutoff') THEN 1
             ELSE 0
         END)) AS `ClinVarPathogenic`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'UKPanelApp') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'panelapp_UK') THEN 1
             ELSE 0
         END)) AS `UKPanelApp`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'SysNDD') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'sysndd') THEN 1
             ELSE 0
         END)) AS `SysNDD`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'Manually') THEN 1
+            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'manually_added') THEN 1
             ELSE 0
         END)) AS `Manually`,
         COUNT(0) AS `mg_score`
@@ -151,12 +166,36 @@ dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel
         `morbidgenes_db`.`view_panel_genes_source`.`ClinVarPathogenic` AS `ClinVarPathogenic`,
         `morbidgenes_db`.`view_panel_genes_source`.`UKPanelApp` AS `UKPanelApp`,
         `morbidgenes_db`.`view_panel_genes_source`.`SysNDD` AS `SysNDD`,
+        `morbidgenes_db`.`view_panel_genes_source`.`GenCC` AS `GenCC`,
         `morbidgenes_db`.`view_panel_genes_source`.`Manually` AS `Manually`,
         `morbidgenes_db`.`view_panel_genes_source`.`mg_score` AS `mg_score`
     FROM
         ((`morbidgenes_db`.`view_panel_genes`
         JOIN `morbidgenes_db`.`view_genes_hgnc` ON ((`morbidgenes_db`.`view_panel_genes`.`hgnc_id` = `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id`)))
         JOIN `morbidgenes_db`.`view_panel_genes_source` ON ((`morbidgenes_db`.`view_panel_genes`.`panel_hgnc_id` = `morbidgenes_db`.`view_panel_genes_source`.`panel_hgnc_id`)))")
+
+# view_panel_all
+dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_all` AS
+    SELECT 
+        `morbidgenes_db`.`view_panel_genes_all`.`panel_version` AS `panel_version`,
+        `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id` AS `hgnc_id`,
+        `morbidgenes_db`.`view_genes_hgnc`.`symbol` AS `symbol`,
+        `morbidgenes_db`.`view_genes_hgnc`.`bed_hg19` AS `bed_hg19`,
+        `morbidgenes_db`.`view_genes_hgnc`.`bed_hg38` AS `bed_hg38`,
+        `morbidgenes_db`.`view_panel_genes_source`.`PanelApp` AS `PanelApp`,
+        `morbidgenes_db`.`view_panel_genes_source`.`AustraliaPanelApp` AS `AustraliaPanelApp`,
+        `morbidgenes_db`.`view_panel_genes_source`.`HGMD_pathogenic` AS `HGMD_pathogenic`,
+        `morbidgenes_db`.`view_panel_genes_source`.`Phenotype_MIM` AS `Phenotype_MIM`,
+        `morbidgenes_db`.`view_panel_genes_source`.`ClinVarPathogenic` AS `ClinVarPathogenic`,
+        `morbidgenes_db`.`view_panel_genes_source`.`UKPanelApp` AS `UKPanelApp`,
+        `morbidgenes_db`.`view_panel_genes_source`.`SysNDD` AS `SysNDD`,
+        `morbidgenes_db`.`view_panel_genes_source`.`GenCC` AS `GenCC`,
+        `morbidgenes_db`.`view_panel_genes_source`.`Manually` AS `Manually`,
+        `morbidgenes_db`.`view_panel_genes_source`.`mg_score` AS `mg_score`
+    FROM
+        ((`morbidgenes_db`.`view_panel_genes_all`
+        JOIN `morbidgenes_db`.`view_genes_hgnc` ON ((`morbidgenes_db`.`view_panel_genes_all`.`hgnc_id` = `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id`)))
+        JOIN `morbidgenes_db`.`view_panel_genes_source` ON ((`morbidgenes_db`.`view_panel_genes_all`.`panel_hgnc_id` = `morbidgenes_db`.`view_panel_genes_source`.`panel_hgnc_id`)))")
 
 ############################################
 ## close database connection

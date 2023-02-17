@@ -7,7 +7,7 @@ library(jsonlite)		##needed for HGNC requests
 
 ############################################
 ## set working directory (needs to be adapted to your specific working directory)
-setwd("/home/MorbidGenes/00_DEV/morbidgenes/db/R")
+setwd("V:/Test/morbidgenes/db/R")
 ## set global options
 options(scipen = 999)
 ############################################
@@ -122,75 +122,122 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 
 ############################################
 ## load csv file(s) and reformat
-MorbidGenes_Panel <- read_delim("data/MorbidGenes-Panel-v2022-02.1.csv.gz", delim = ";", escape_double = FALSE, trim_ws = TRUE) %>%
-	filter(MorbidScore != 0) %>%
-	select(symbol = SYMBOL, HGMD_pathogenic_variant_count_cutoff, ClinVarPathogenicCount_cutoff, addedManually, isPanelAppGene, isUKPanelAppGene, isAustraliaPanelAppGene, isSysNDDGene, has_Phenotype_MIM_Number) %>% 
-	mutate(version = "MorbidGenes_Panel_v2022_02_1") %>% 
+MorbidGenes_Panel <- read_delim("data/MorbidGenes-Panel-v2023-02.1.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE) %>%
+	filter(morbidscore != 0) %>%
+	dplyr::select(symbol, hgmd_pathogenic_cutoff, clinvar_pathogenic_cutoff, manually_added, panelapp, panelapp_UK, panelapp_australia, sysndd, omim_phenotype, gencc) %>% 
+	mutate(version = "v2023_02_1") %>% 
 	replace(is.na(.), FALSE)
 	
 # compute HGNC ID
 MorbidGenes_Panel_hngc <- MorbidGenes_Panel %>%
 	mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
-	select(hgnc_id, HGMD_pathogenic_variant_count_cutoff, ClinVarPathogenicCount_cutoff, addedManually, isPanelAppGene, isUKPanelAppGene, isAustraliaPanelAppGene, isSysNDDGene, has_Phenotype_MIM_Number)
+	dplyr::select(hgnc_id, hgmd_pathogenic_cutoff, clinvar_pathogenic_cutoff, manually_added, panelapp, panelapp_UK, panelapp_australia, sysndd, omim_phenotype, gencc)
 ############################################
 
 
 
 ############################################
+## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
 ## create mb_panel_version table
-mb_panel_version <- tibble(
-	  panel_id = numeric(),
-	  panel_version = character(),
-	  panel_date = character(),
-	  is_current = logical()
-	) %>%
-	add_row(panel_id = 1, panel_version = "MorbidGenes_Panel_v2022_02_1", panel_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d"), is_current=TRUE)
-############################################
-
-
+#mb_panel_version <- tibble(
+#	  panel_id = numeric(),
+#	  panel_version = character(),
+#	  panel_date = character(),
+#	  is_current = logical()
+#	) %>%
+#	add_row(panel_id = 1, panel_version = "v2023_01_1", panel_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d"), is_current=TRUE)
 
 ############################################
+## USE THIS IF THIS IS NOT THE FIRST VERSION
+mb_panel_version = read_csv((list.files("results/", pattern = "mb_panel_version", full.names = T) %>% sort() %>% tail(n = 1))) %>% 
+  mutate(is_current = F)
+new_panel_id = (mb_panel_version %>% slice(n()))$panel_id + 1
+mb_panel_version = mb_panel_version %>%
+  add_row(panel_id = new_panel_id, panel_version = "v2023_02_1", panel_date = as.Date(strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")), is_current=TRUE)
+
+
+############################################
+## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
 ## create mb_panel_genes_join table
-mb_panel_genes_join <- MorbidGenes_Panel_hngc %>%
-	select(hgnc_id) %>%
-	mutate(panel_id = 1) %>% 
-	mutate(panel_hgnc_id = row_number()) %>%
-	select(panel_hgnc_id, panel_id, hgnc_id)
-############################################
-
-
+#mb_panel_genes_join <- MorbidGenes_Panel_hngc %>%
+#	select(hgnc_id) %>%
+#	mutate(panel_id = 1) %>% 
+#	mutate(panel_hgnc_id = row_number()) %>%
+#	select(panel_hgnc_id, panel_id, hgnc_id)
 
 ############################################
+## USE THIS IF THIS IS NOT THE FIRST VERSION
+mb_panel_genes_join_old = read_csv((list.files("results/", pattern = "mb_panel_genes_join", full.names = T) %>% sort() %>% tail(n = 1)))
+latestrow = max(mb_panel_genes_join_old$panel_hgnc_id)
+mb_panel_genes_join_new <- MorbidGenes_Panel_hngc %>%
+  select(hgnc_id) %>%
+  mutate(panel_id = new_panel_id) %>% 
+  mutate(panel_hgnc_id = row_number() + latestrow) %>%
+  select(panel_hgnc_id, panel_id, hgnc_id)
+mb_panel_genes_join = rbind(mb_panel_genes_join_old, mb_panel_genes_join_new)
+
+############################################
+## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
+## create mb_panel_genes_source_join table
+#mb_panel_genes_source <- MorbidGenes_Panel_hngc %>%
+#	mutate(panel_id = 1) %>% 
+#	mutate(panel_hgnc_id = row_number()) %>% 
+#	select(panel_hgnc_id, hgmd_pathogenic_cutoff, clinvar_pathogenic_cutoff, manually_added, panelapp, panelapp_UK, panelapp_australia, sysndd, omim_phenotype, gencc) %>% 
+#	pivot_longer(!panel_hgnc_id, names_to = "source_name", values_to = "in_source") %>%
+#	filter(in_source) #%>% 
+	#mutate(source_name = str_replace(source_name, "Gene", "")) %>% 
+	#mutate(source_name = str_replace(source_name, "is", "")) %>%
+	#mutate(source_name = str_replace(source_name, "has_", "")) %>%
+	#mutate(source_name = str_replace(source_name, "_variant_count_cutoff", "")) %>%
+	#mutate(source_name = str_replace(source_name, "_Number", "")) %>%
+	#mutate(source_name = str_replace(source_name, "Count_cutoff", "")) %>%
+	#mutate(source_name = str_replace(source_name, "added", ""))
+
+############################################
+## USE THIS IF THIS IS NOT THE FIRST VERSION
 ## create mb_panel_genes_source_join table
 mb_panel_genes_source <- MorbidGenes_Panel_hngc %>%
-	mutate(panel_id = 1) %>% 
-	mutate(panel_hgnc_id = row_number()) %>% 
-	select(panel_hgnc_id, HGMD_pathogenic_variant_count_cutoff, ClinVarPathogenicCount_cutoff, addedManually, isPanelAppGene, isUKPanelAppGene, isAustraliaPanelAppGene, isSysNDDGene, has_Phenotype_MIM_Number) %>% 
-	pivot_longer(!panel_hgnc_id, names_to = "source_name", values_to = "in_source") %>%
-	filter(in_source) %>% 
-	mutate(source_name = str_replace(source_name, "Gene", "")) %>% 
-	mutate(source_name = str_replace(source_name, "is", "")) %>%
-	mutate(source_name = str_replace(source_name, "has_", "")) %>%
-	mutate(source_name = str_replace(source_name, "_variant_count_cutoff", "")) %>%
-	mutate(source_name = str_replace(source_name, "_Number", "")) %>%
-	mutate(source_name = str_replace(source_name, "Count_cutoff", "")) %>%
-	mutate(source_name = str_replace(source_name, "added", ""))
+  mutate(panel_id = new_panel_id) %>% 
+  mutate(panel_hgnc_id = row_number() + latestrow) %>% 
+  select(panel_hgnc_id, hgmd_pathogenic_cutoff, clinvar_pathogenic_cutoff, manually_added, panelapp, panelapp_UK, panelapp_australia, sysndd, omim_phenotype, gencc) %>% 
+  pivot_longer(!panel_hgnc_id, names_to = "source_name", values_to = "in_source") %>%
+  filter(in_source) #%>% 
+#mutate(source_name = str_replace(source_name, "Gene", "")) %>% 
+#mutate(source_name = str_replace(source_name, "is", "")) %>%
+#mutate(source_name = str_replace(source_name, "has_", "")) %>%
+#mutate(source_name = str_replace(source_name, "_variant_count_cutoff", "")) %>%
+#mutate(source_name = str_replace(source_name, "_Number", "")) %>%
+#mutate(source_name = str_replace(source_name, "Count_cutoff", "")) %>%
+#mutate(source_name = str_replace(source_name, "added", ""))
 
 mb_source <- mb_panel_genes_source %>%
 	select(source_name) %>%
 	unique() %>% 
 	mutate(source_id = row_number()) %>% 
 	mutate(source_logic = "dummy") %>% 
-	select(source_id, panel_hgnc_id, source_logic)
+	select(source_id, source_name, source_logic)
 
-mb_panel_genes_source_join <- mb_panel_genes_source %>%
-	left_join(mb_source, by = "source_name") %>%
-	select(-source_name, -source_logic) %>% 
-	mutate(panel_hgnc_source_id = row_number()) %>%
-	select(panel_hgnc_source_id, panel_hgnc_id, source_id)
 
 ############################################
+## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
+## create mb_panel_genes_source_join table
+#mb_panel_genes_source_join <- mb_panel_genes_source %>%
+#	left_join(mb_source, by = "source_name") %>%
+#	select(-source_name, -source_logic) %>% 
+#	mutate(panel_hgnc_source_id = row_number()) %>%
+#	select(panel_hgnc_source_id, panel_hgnc_id, source_id)
 
+############################################
+## USE THIS IF THIS IS NOT THE FIRST VERSION
+## create mb_panel_genes_source_join table
+mb_panel_genes_source_join_old = read_csv((list.files("results/", pattern = "mb_panel_genes_source_join", full.names = T) %>% sort() %>% tail(n = 1)))
+latestrow2 = max(mb_panel_genes_source_join_old$panel_hgnc_source_id)
+mb_panel_genes_source_join_new <- mb_panel_genes_source %>%
+  left_join(mb_source, by = "source_name") %>%
+  select(-source_name, -source_logic) %>% 
+  mutate(panel_hgnc_source_id = row_number() + latestrow2) %>%
+  select(panel_hgnc_source_id, panel_hgnc_id, source_id)
+mb_panel_genes_source_join = rbind(mb_panel_genes_source_join_old, mb_panel_genes_source_join_new)
 
 
 ############################################
@@ -198,14 +245,14 @@ mb_panel_genes_source_join <- mb_panel_genes_source %>%
 creation_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
 write_csv(mb_panel_version, file = paste0("results/mb_panel_version.",creation_date,".csv"))
-gzip(paste0("results/mb_panel_version.",creation_date,".csv"))
+#gzip(paste0("results/mb_panel_version.",creation_date,".csv"))
 
 write_csv(mb_panel_genes_join, file = paste0("results/mb_panel_genes_join.",creation_date,".csv"))
-gzip(paste0("results/mb_panel_genes_join.",creation_date,".csv"))
+#gzip(paste0("results/mb_panel_genes_join.",creation_date,".csv"))
 
 write_csv(mb_source, file = paste0("results/mb_source.",creation_date,".csv"))
-gzip(paste0("results/mb_source.",creation_date,".csv"))
+#gzip(paste0("results/mb_source.",creation_date,".csv"))
 
 write_csv(mb_panel_genes_source_join, file = paste0("results/mb_panel_genes_source_join.",creation_date,".csv"))
-gzip(paste0("results/mb_panel_genes_source_join.",creation_date,".csv"))
+#gzip(paste0("results/mb_panel_genes_source_join.",creation_date,".csv"))
 ############################################

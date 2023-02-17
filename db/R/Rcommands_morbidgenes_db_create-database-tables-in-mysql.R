@@ -11,7 +11,7 @@ library(tools)		##needed for md5sum calculation
 
 ############################################
 ## set working directory (needs to be adapted to your specific working directory)
-setwd("/home/MorbidGenes/00_DEV/morbidgenes/db/R")
+setwd("V:/Test/morbidgenes/db/R")
 ## set global options
 options(scipen = 999)
 ############################################
@@ -22,14 +22,19 @@ options(scipen = 999)
 ## 
 import_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
-results_csv_table <- list.files(path = "results/", pattern = ".csv.gz") %>%
+results_csv_table <- list.files(path = "results/", pattern = ".csv$") %>%
 	as_tibble() %>%
-	separate(value, c("table_name", "table_date", "extension", "compression"), sep = "\\.") %>%
-	mutate(file_name = paste0(table_name, ".", table_date, ".", extension, ".", compression)) %>%
+	separate(value, c("table_name", "table_date", "extension"), sep = "\\.") %>%
+	mutate(file_name = paste0(table_name, ".", table_date, ".", extension)) %>%
 	mutate(import_date = import_date) %>%
 	mutate(results_file_id = row_number()) %>%
 	mutate(md5sum_file = md5sum(paste0("results/", file_name))) %>%
-	dplyr::select(results_file_id, file_name, table_name, table_date, extension, compression, import_date, md5sum_file)
+  #filter(table_date == "2023-02-13") %>%
+	dplyr::select(results_file_id, file_name, table_name, table_date, extension, import_date, md5sum_file) %>%
+  mutate(table_date = as.Date(table_date)) %>% 
+  group_by(table_name) %>% 
+  filter(table_date == max(table_date)) %>% 
+  ungroup()
 ############################################
 
 

@@ -2,7 +2,7 @@
 ## load libraries
 library(tidyverse)	## needed for general table operations
 library(biomaRt)	## needed to get gene coordinates
-library("R.utils")	## gzip downlaoded files
+#library("R.utils")	## gzip downlaoded files
 ############################################
 
 
@@ -78,7 +78,7 @@ gene_coordinates_from_ensembl <- function(ensembl_id, reference = "hg19") {
 
 ############################################
 ## set working directory (needs to be adapted to your specific working directory)
-setwd("/home/MorbidGenes/00_DEV/morbidgenes/db/R")
+setwd("V:/Test/morbidgenes/db/R")
 ## set global options
 options(scipen = 999)
 ############################################
@@ -91,14 +91,14 @@ file_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m
 hgnc_link <- "http://ftp.ebi.ac.uk/pub/databases/genenames/hgnc/tsv/non_alt_loci_set.txt"
 hgnc_file <- "data/non_alt_loci_set.txt"
 download.file(hgnc_link, hgnc_file, mode = "wb")
-gzip(hgnc_file)
+#gzip(hgnc_file)
 ############################################
 
 
 
 ############################################
 ## load the downloaded HGNC file
-non_alt_loci_set <- read_delim(paste0(hgnc_file,".gz"), "\t", col_names = TRUE) %>%
+non_alt_loci_set <- read_delim(paste0(hgnc_file), "\t", col_names = TRUE) %>%
 	mutate(update_date = file_date) 
 
 non_alt_loci_set_coordinates <- non_alt_loci_set %>%
@@ -132,9 +132,9 @@ mb_genes_hgnc_connect <- non_alt_loci_set_coordinates %>%
 ## export table as csv with date of creation
 creation_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
-write_csv(non_alt_loci_set_coordinates, file = paste0("results/non_alt_loci_set_coordinates.",creation_date,".csv"))
-gzip(paste0("results/non_alt_loci_set_coordinates.",creation_date,".csv"))
+write_csv(non_alt_loci_set_coordinates, file = paste0("results/DummyResults/non_alt_loci_set_coordinates.",creation_date,".csv"))
+#gzip(paste0("results/non_alt_loci_set_coordinates.",creation_date,".csv"))
 
-write_csv(mb_genes_hgnc_connect, file = paste0("results/mb_genes_hgnc_connect.",creation_date,".csv"))
-gzip(paste0("results/mb_genes_hgnc_connect.",creation_date,".csv"))
+write_csv(mb_genes_hgnc_connect, file = paste0("results/DummyResults/mb_genes_hgnc_connect.",creation_date,".csv"))
+#gzip(paste0("results/mb_genes_hgnc_connect.",creation_date,".csv"))
 ############################################
