@@ -7,4 +7,7 @@ libbz2-dev \
 libicu-dev \
 liblzma-dev \
 libsodium-dev
-RUN install2.r Rcpp plumber DBI RMariaDB jsonlite config jose plotly RCurl stringdist xlsx easyPubMed rvest lubridate pool memoise coop cowplot
+RUN install2.r --error -n 4 -r http://cran.rstudio.org Rcpp plumber DBI RMariaDB jsonlite config jose plotly RCurl stringdist xlsx easyPubMed rvest lubridate pool memoise coop cowplot
+## same as:
+#RUN echo "options(repos = c(CRAN = 'http://cran.rstudio.org'))" >> /usr/local/lib/R/etc/Rprofile.site
+#RUN R -e "install.packages(c('plumber', 'Rcpp', 'DBI', 'RMariaDB', 'jsonlite', 'config', 'jose', 'plotly', 'RCurl', 'stringdist', 'xlsx', 'easyPubMed', 'rvest', 'lubridate', 'pool', 'memoise', 'coop', 'cowplot'), method = 'wget')"
