@@ -1,6 +1,7 @@
 ## Docker
-# database config file
-#docker-compose.yml
+# ssl key files
+app/docker/nginx/cert.pem
+app/docker/nginx/key.pem
 
 # Ignore the results directory in api folde
 api/results/
