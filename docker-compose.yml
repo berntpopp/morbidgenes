@@ -34,7 +34,7 @@ services:
   restart: unless-stopped
  api:
   build: ./api/
-  command: Rscript /morbidgenes_api_volume/start_morbidgenes-db_api.R
+  command: Rscript /morbidgenes_api_volume/start_api.R
   restart: always
   volumes:
   - ./api/:/morbidgenes_api_volume/
