@@ -10,4 +10,4 @@ libicu-dev \
 liblzma-dev \
 libsodium-dev \
 libtool
-RUN install2.r --error -n 4 -r http://cran.rstudio.org Rcpp plumber DBI RMariaDB jsonlite config jose plotly RCurl stringdist xlsx easyPubMed rvest lubridate pool memoise coop cowplot keyring rlang
+RUN install2.r --error -n 4 -r http://cran.rstudio.org Rcpp plumber DBI RMariaDB jsonlite config jose plotly RCurl stringdist xlsx easyPubMed rvest lubridate pool memoise coop cowplot keyring rlang logger tictoc fs
