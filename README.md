@@ -28,3 +28,13 @@ Contributors names and contact info
 This project is licensed under the "BSD 3-Clause" License - see the LICENSE.md file for details
 
 ## Acknowledgments
+
+# How to run it
+## Local running
+### Requirements
+- docker-compose
+- docker runtime or podman
+
+### Build
+- `docker-compose --env-file config_local.env up`
+    - `config_local.env` configuration for local environment

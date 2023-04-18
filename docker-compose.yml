@@ -1,62 +1,62 @@
 version: '3.8'
 services:
- mysql:
-  image: mysql:8.0.29
-  container_name: mysql
-  command: mysqld --default-authentication-plugin=mysql_native_password
-  restart: always
-  environment:
-   MYSQL_DATABASE: ${MYSQL_DATABASE}
-   MYSQL_USER: ${MYSQL_USER}
-   MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-   MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-  ports:
-   - "9918:3306"
-  volumes:
-   - ../data/mysql/:/var/lib/mysql/
-   - ../data/backup:/backup
- mysql-cron-backup:
-  image: 'fradelg/mysql-cron-backup'
-  depends_on:
-   - mysql
-  volumes:
-   - ../data/backup:/backup
-  environment:
-   MYSQL_HOST: mysql
-   MYSQL_USER: root
-   MYSQL_PASS: ${MYSQL_ROOT_PASSWORD}
-   MAX_BACKUPS: 60
-   INIT_BACKUP: 1
-   # Every day at 03:00
-   CRON_TIME: 0 3 * * *
-   # Make it small
-   GZIP_LEVEL: 9
-  restart: unless-stopped
- api:
-  build: ./api/
-  command: Rscript /morbidgenes_api_volume/start_api.R
-  restart: always
-  volumes:
-  - ./api/:/morbidgenes_api_volume/
-  ports:
-     - "10908-10917:10918"
-  environment:
-   PASSWORD: ${PASSWORD}
-   SMTP_PASSWORD: ${SMTP_PASSWORD}
-   API_CONFIG: ${API_CONFIG}
- alb:
-  image: 'dockercloud/haproxy:1.6.7'
-  links:
-     - api
-  volumes:
-     - /var/run/docker.sock:/var/run/docker.sock
-  restart: always
- app:
-  build: ./app/
-  container_name: morbidgenes_app
-  restart: always
-  ports:
-     - "80:80"
-     - "443:443"
+   mysql:
+      image: mysql:8.0.29
+      container_name: mysql
+      command: mysqld --default-authentication-plugin=mysql_native_password
+      restart: always
+      environment:
+         MYSQL_DATABASE: ${MYSQL_DATABASE}
+         MYSQL_USER: ${MYSQL_USER}
+         MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+         MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      ports:
+         - "9918:3306"
+      volumes:
+         - ../data/mysql/:/var/lib/mysql/
+         - ../data/backup:/backup
+   mysql-cron-backup:
+      image: 'fradelg/mysql-cron-backup'
+      depends_on:
+         - mysql
+      volumes:
+         - ../data/backup:/backup
+      environment:
+         MYSQL_HOST: mysql
+         MYSQL_USER: root
+         MYSQL_PASS: ${MYSQL_ROOT_PASSWORD}
+         MAX_BACKUPS: 60
+         INIT_BACKUP: 1
+         # Every day at 03:00
+         CRON_TIME: 0 3 * * *
+         # Make it small
+         GZIP_LEVEL: 9
+      restart: unless-stopped
+   api:
+      build: ./api/
+      command: Rscript /morbidgenes_api_volume/start_api.R
+      restart: always
+      volumes:
+      - ./api/:/morbidgenes_api_volume/
+      ports:
+         - "10908-10917:10918"
+      environment:
+         PASSWORD: ${API_PASSWORD}
+         SMTP_PASSWORD: ${API_SMTP_PASSWORD}
+         API_CONFIG: ${API_CONFIG}
+   alb:
+      image: 'dockercloud/haproxy:1.6.7'
+      links:
+         - api
+      volumes:
+         - /var/run/docker.sock:/var/run/docker.sock
+      restart: always
+   app:
+      build: ./app/
+      container_name: morbidgenes_app
+      restart: always
+      ports:
+         - "80:80"
+         - "443:443"
 volumes:
- morbidgenes_api_volume:
+   morbidgenes_api_volume:
