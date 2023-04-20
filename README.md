@@ -32,8 +32,15 @@ This project is licensed under the "BSD 3-Clause" License - see the LICENSE.md f
 # How to run it
 ## Local running
 ### Requirements
-- docker-compose
-- docker runtime or podman
+#### Windows
+- WSL2
+    - when using podman add registries to configuration `/etc/containers/registries.conf`
+    - ```unqualified-search-registries = ['registry.fedoraproject.org', 'registry.access.redhat.com', 'registry.centos.org', 'docker.io']```
+
+- Docker Desktop
+    - docker-compose
+    - docker runtime or podman
+
 
 ### Build
 - `docker-compose --env-file config_local.env up`
