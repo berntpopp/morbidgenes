@@ -43,6 +43,7 @@ Sys.setenv(TZ = "GMT")
 
 
 ##-------------------------------------------------------------------##
+# generate a pool of connections to the database
 pool <- dbPool(
   drv = RMariaDB::MariaDB(),
   dbname = dw$dbname,
@@ -62,7 +63,7 @@ pool <- dbPool(
 options("plumber.apiURL" = dw$api_base_url)
 
 # load source files
-# TODO: add the functions and scripts
+source("functions/helper-functions.R", local = TRUE)
 
 # convert to memoise functions
 # Expire items in cache after 60 minutes
@@ -70,6 +71,8 @@ options("plumber.apiURL" = dw$api_base_url)
 cm <- cachem::cache_mem(max_age = 60 * 60,
   max_size = 100 * 1024 ^ 2)
 
+generate_tibble_fspec_mem <- memoise(generate_tibble_fspec,
+  cache = cm)
 
 ##-------------------------------------------------------------------##
 ##-------------------------------------------------------------------##
@@ -94,6 +97,20 @@ cm <- cachem::cache_mem(max_age = 60 * 60,
 ##-------------------------------------------------------------------##
 ##-------------------------------------------------------------------##
 
+
+##-------------------------------------------------------------------##
+## hooks
+
+#* @plumber
+function(pr) {
+
+  pr %>%
+    plumber::pr_hook("exit", function() {
+      pool::poolClose(pool)
+      message("Disconnected")
+    })
+}
+##-------------------------------------------------------------------##
 
 
 ##-------------------------------------------------------------------##
@@ -127,127 +144,92 @@ function(req, res) {
 ## get current panel
 #* @serializer json list(na="string")
 #' @get /api/panel/
-function(res, sort = "symbol", `page[after]` = 0, `page[size]` = "all") {
-  # get number of rows in view_panel_current
-  mb_panel_current_rows <- (pool %>%
-    tbl("view_panel_current") %>%
-    summarise(n = n()) %>%
-    collect()
-  )$n
+function(res,
+  sort = "symbol",
+  filter = "",
+  fields = "",
+  `page_after` = "",
+  `page_size` = "all",
+  fspec = "panel_version,hgnc_id,symbol,bed_hg19,bed_hg38,PanelApp,AustraliaPanelApp,HGMD_pathogenic,Phenotype_MIM,ClinVarPathogenic,UKPanelApp,SysNDD,Manually,mg_score") {
 
-  # split the sort input by comma and check if hgnc_ids
-  # in the resulting list, if not append to the list for unique sorting
-  sort_list <- str_split(str_squish(sort), ",")[[1]]
+  start_time <- Sys.time()
 
-  if (!("hgnc_id" %in% sort)) {
-    sort_list <- append(sort, "hgnc_id")
-  }
+  # generate sort expression based on sort input
+  sort_exprs <- generate_sort_expressions(sort, unique_id = "hgnc_id")
 
-  # check if `page[size]` is either "all" or a valid integer
-  # and convert or assign values accordingly
-  if (`page[size]` == "all") {
-    page_after <- 0
-    page_size <- mb_panel_current_rows
-    page_count <- ceiling(mb_panel_current_rows / page_size)
-  } else if (is.numeric(as.integer(`page[size]`))) {
-    page_after <- as.integer(`page[after]`)
-    page_size <- as.integer(`page[size]`)
-    page_count <- ceiling(mb_panel_current_rows / page_size)
-  } else {
-    res$status <- 400 #Bad Request
-    return(list(error = "Invalid Parameter Value Error."))
-  }
+  # generate filter expression based on filter input
+  filter_exprs <- generate_filter_expressions(filter)
 
   # get data from database
-  mb_panel_current_table <- pool %>%
+  mb_panel_current_view <- pool %>%
     tbl("view_panel_current") %>%
-    arrange(!!!syms(sort_list)) %>%
     collect()
 
-  # find the current row of the requested page_after entry
-  page_after_row <- (mb_panel_current_table %>%
-    mutate(row = row_number()) %>%
-    filter(hgnc_id == page_after)
-  )$row
+  mb_panel_current_table <- mb_panel_current_view %>%
+    arrange(!!!rlang::parse_exprs(sort_exprs)) %>%
+    filter(!!!rlang::parse_exprs(filter_exprs))
 
-  if (length(page_after_row) == 0) {
-    page_after_row <- 0
-    page_after_row_next <- (mb_panel_current_table %>%
-      filter(row_number() == page_after_row + page_size + 1))$hgnc_id
-  } else {
-    page_after_row_next <- (mb_panel_current_table %>%
-      filter(row_number() == page_after_row + page_size))$hgnc_id
-  }
+  # select fields from table based on input
+  # using the helper function "select_tibble_fields"
+  mb_panel_current_table <- select_tibble_fields(mb_panel_current_table,
+    fields,
+    "hgnc_id")
 
-  # find next and prev item row
-  page_after_row_prev <- (mb_panel_current_table %>%
-    filter(row_number() == page_after_row - page_size))$hgnc_id
-  page_after_row_last <- (mb_panel_current_table %>%
-    filter(row_number() ==  page_size * (page_count - 1)))$hgnc_id
+  # use the helper generate_cursor_pag_inf to
+  # generate cursor pagination information from a tibble
+  mb_panel_pag_info <- generate_cursor_pag_inf(
+    mb_panel_current_table,
+    `page_size`,
+    `page_after`,
+    "hgnc_id")
 
-  # filter by row
-  mb_panel_current_collected <- mb_panel_current_table %>%
-    filter(row_number() > page_after_row & row_number() <= page_after_row + page_size)
+  # use the helper generate_tibble_fspec to
+  # generate fields specs from a tibble
+  # first for the unfiltered and unsubset table
+  mb_panel_current_fspec <- generate_tibble_fspec_mem(mb_panel_current_view,
+    fspec)
+  # then for the filtered/ subset one
+  mb_panel_current_table_fspec <- generate_tibble_fspec_mem(
+    mb_panel_current_table,
+    fspec)
+  # assign the second to the first as filtered
+  mb_panel_current_fspec$fspec$count_filtered <-
+    mb_panel_current_table_fspec$fspec$count
 
-  # generate links for self, next and prev pages
-  self <- paste0("http://",
-    dw$host, ":",
-      dw$port_self,
-      "/api/reports/?sort=",
-      sort, "&page[after]=",
-      `page[after]`, "&page[size]=",
-      `page[size]`)
-  if (length(page_after_row_prev) == 0) {
-    prev <- "null"
-  } else {
-    prev <- paste0("http://",
-      dw$host,
-      ":",
-       dw$port_self,
-      "/api/reports?sort=",
-      sort,
-      "&page[after]=",
-      page_after_row_prev,
-      "&page[size]=",
-      `page[size]`)
-  }
+  # compute execution time
+  end_time <- Sys.time()
+  execution_time <- as.character(paste0(round(end_time - start_time, 2),
+    " secs"))
 
-  if (length(page_after_row_next) == 0) {
-    `next` <- "null"
-  } else {
-    `next` <- paste0("http://",
-      dw$host,
-      ":",
-      dw$port_self,
-      "/api/reports?sort=",
-      sort, "&page[after]=",
-      page_after_row_next,
-      "&page[size]=",
-      `page[size]`)
-  }
+  # add columns to the meta information from
+  # generate_cursor_pag_inf function return
+  meta <- mb_panel_pag_info$meta %>%
+    add_column(tibble::as_tibble(list("sort" = sort,
+    "filter" = filter,
+    "fields" = fields,
+    "fspec" = mb_panel_current_fspec,
+    "executionTime" = execution_time)))
 
-  if (length(page_after_row_last) == 0) {
-    last <- "null"
-  } else {
-    last <- paste0("http://",
-      dw$host,
-      ":",
-      dw$port_self,
-      "/api/reports?sort=",
-      sort,
-      "&page[after]=",
-      page_after_row_last,
-      "&page[size]=",
-      `page[size]`)
-  }
+  # add host, port and other information to links from
+  # the link information from generate_cursor_pag_inf function return
+  links <- mb_panel_pag_info$links %>%
+      pivot_longer(everything(), names_to = "type", values_to = "link") %>%
+    mutate(link = case_when(
+      link != "null" ~ paste0(
+        dw$api_base_url,
+        "/api/panel?sort=",
+        sort,
+        ifelse(filter != "", paste0("&filter=", filter), ""),
+        ifelse(fields != "", paste0("&fields=", fields), ""),
+        link),
+      link == "null" ~ "null"
+    )) %>%
+      pivot_wider(everything(), names_from = "type", values_from = "link")
 
-  links <- as_tibble(list("prev" = prev,
-    "self" = self,
-    "next" = `next`,
-    "last" = last))
-
-  #
-  list(links = links, data = mb_panel_current_collected)
+  # generate object to return
+  list(links = links,
+    meta = meta,
+    data = mb_panel_pag_info$data)
 }
 
 
