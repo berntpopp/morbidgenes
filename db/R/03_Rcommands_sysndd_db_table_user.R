@@ -63,6 +63,6 @@ user <- tibble(
 ############################################
 ## export as csv with date of creation
 creation_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
-write_csv(user, file = paste0("results/user.",creation_date, ".csv"), na = "")
-gzip(paste0("results/user.",creation_date,".csv"), overwrite = TRUE)
+write_csv(user, file = paste0("results/user.", creation_date, ".csv"), na = "")
+gzip(paste0("results/user.", creation_date, ".csv"), overwrite = TRUE)
 ############################################

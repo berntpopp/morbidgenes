@@ -1,10 +1,10 @@
 ############################################
 ## load libraries
-library(tidyverse)  ##needed for general table operations
-library(DBI)    ##needed for MySQL data export
-library(RMariaDB)  ##needed for MySQL data export
-library(sqlr)    ##needed for MySQL data export
-library(tools)    ##needed for md5sum calculation
+library(tidyverse)  ## needed for general table operations
+library(DBI)    ## needed for MySQL data export
+library(RMariaDB)  ## needed for MySQL data export
+library(sqlr)    ## needed for MySQL data export
+library(tools)    ## needed for md5sum calculation
 ############################################
 
 
@@ -20,7 +20,7 @@ options(scipen = 999)
 
 
 ############################################
-## 
+##
 import_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
 results_csv_table <- list.files(path = "results/", pattern = ".csv.gz") %>%

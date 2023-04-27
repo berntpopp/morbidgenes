@@ -34,6 +34,8 @@ rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_sou
 dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int auto_increment;")
 dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int auto_increment;")
+dbClearResult(rs)
 
 ############################################
 ## make panel_id in all tables compatible as int
@@ -56,6 +58,18 @@ dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int NOT NULL;")
 dbClearResult(rs)
 
+############################################
+## make user_ids in all tables compatible as int
+## and make the entry user required in all tables
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int NOT NULL;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int;")
+dbClearResult(rs)
+
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY upload_user int NOT NULL;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY upload_user int;")
+dbClearResult(rs)
 
 ############################################
 ## add foreign key constrains
@@ -72,6 +86,8 @@ dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join ADD FOREIGN KEY (source_id) REFERENCES morbidgenes_db.mg_source(source_id);")
 dbClearResult(rs)
 
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version ADD FOREIGN KEY (upload_user) REFERENCES morbidgenes_db.user(user_id);")
+dbClearResult(rs)
 
 ############################################
 ## create views

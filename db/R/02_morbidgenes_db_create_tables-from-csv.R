@@ -145,9 +145,14 @@ mg_panel_version <- tibble(
     panel_id = numeric(),
     panel_version = character(),
     panel_date = character(),
-    is_current = logical()
+    is_current = logical(),
+    upload_user = numeric()
   ) %>%
-  add_row(panel_id = 1, panel_version = "MorbidGenes_Panel_v2022_02_1", panel_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d"), is_current=TRUE)
+  add_row(panel_id = 1,
+    panel_version = "MorbidGenes_Panel_v2022_02_1",
+    panel_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d"),
+    is_current = TRUE,
+    upload_user = 1)
 ############################################
 
 
