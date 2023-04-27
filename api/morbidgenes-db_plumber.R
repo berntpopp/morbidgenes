@@ -141,8 +141,16 @@ function(req, res) {
 ## Panel endpoints
 
 #* @tag panel
-## get current panel
+#* allows filtering and field selection from all panels
 #* @serializer json list(na="string")
+#* @param sort:str  Output column to arrange output on.
+#* @param filter:str Comma separated list of filters to apply.
+#* @param fields:str Comma separated list of output columns.
+#* @param page_after:str Cursor after which entries are shown.
+#* @param page_size:str Page size in cursor pagination.
+#* @param fspec:str Fields to generate fied specification for.
+#* @response 200 A cursor pagination object with links, meta information and gene objects in the data field.
+#* @response 500 Internal server error.
 #' @get /api/panel/
 function(res,
   sort = "symbol",
