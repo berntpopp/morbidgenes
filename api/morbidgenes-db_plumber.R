@@ -133,6 +133,51 @@ function(req, res) {
   }
 }
 
+#* @filter check_signin
+#* checks signin from header token and set user variable to request
+function(req, res) {
+  # load secret and convert to raw
+  key <- charToRaw(dw$secret)
+
+  if (req$REQUEST_METHOD == "GET" && is.null(req$HTTP_AUTHORIZATION)) {
+    plumber::forward()
+  } else if (req$REQUEST_METHOD == "GET" && !is.null(req$HTTP_AUTHORIZATION)) {
+    # load jwt from header
+    jwt <- str_remove(req$HTTP_AUTHORIZATION, "Bearer ")
+    # decode jwt
+    user <- jwt_decode_hmac(str_remove(req$HTTP_AUTHORIZATION, "Bearer "),
+      secret = key)
+    # add user_id and user_role as value to request
+    req$user_id <- as.integer(user$user_id)
+    req$user_role <- user$user_role
+    # and forward request
+    plumber::forward()
+  } else if (req$REQUEST_METHOD == "POST" &&
+      (req$PATH_INFO == "/api/upload/csv")) {
+    # and forward request
+    plumber::forward()
+  } else {
+    if (is.null(req$HTTP_AUTHORIZATION)) {
+      res$status <- 401 # Unauthorized
+      return(list(error = "Authorization http header missing."))
+    } else if (jwt_decode_hmac(str_remove(req$HTTP_AUTHORIZATION, "Bearer "),
+        secret = key)$exp < as.numeric(Sys.time())) {
+      res$status <- 401 # Unauthorized
+      return(list(error = "Token expired."))
+    } else {
+      # load jwt from header
+      jwt <- str_remove(req$HTTP_AUTHORIZATION, "Bearer ")
+      # decode jwt
+      user <- jwt_decode_hmac(str_remove(req$HTTP_AUTHORIZATION, "Bearer "),
+        secret = key)
+      # add user_id and user_role as value to request
+      req$user_id <- as.integer(user$user_id)
+      req$user_role <- user$user_role
+      # and forward request
+      plumber::forward()
+    }
+  }
+}
 ##-------------------------------------------------------------------##
 
 
@@ -304,4 +349,134 @@ function(hgnc_id) {
     collect()
 }
 ## Panel endpoints
+##-------------------------------------------------------------------##
+
+
+
+##-------------------------------------------------------------------##
+## Authentication section
+
+#* @tag authentication
+#* does user login
+## based on "https://github.com/
+## jandix/sealr/blob/master/examples/jwt_simple_example.R"
+#* @serializer json list(na="string")
+#' @get /api/auth/authenticate
+function(req, res, user_name, password) {
+
+  check_user <- user_name
+  check_pass <- URLdecode(password)
+
+  # load secret and convert to raw
+  key <- charToRaw(dw$secret)
+
+  # check if user provided credentials
+      if (is.null(check_user) ||
+        nchar(check_user) < 5 ||
+        nchar(check_user) > 20 ||
+        is.null(check_pass) ||
+        nchar(check_pass) < 5 ||
+        nchar(check_pass) > 50) {
+      res$status <- 404
+      res$body <- "Please provide valid username and password."
+      res
+      }
+
+  # connect to database, find user in database and password is correct
+  user_filtered <- pool %>%
+    tbl("user") %>%
+    filter(user_name == check_user & password == check_pass & approved == 1) %>%
+    select(-password) %>%
+    collect() %>%
+    mutate(iat = as.numeric(Sys.time())) %>%
+    mutate(exp = as.numeric(Sys.time()) + dw$refresh)
+
+  # return answer depending on user credentials status
+  if (nrow(user_filtered) != 1) {
+    res$status <- 401
+    res$body <- "User or password wrong."
+    res
+  }
+
+  if (nrow(user_filtered) == 1) {
+    claim <- jwt_claim(user_id = user_filtered$user_id,
+    user_name = user_filtered$user_name,
+    email = user_filtered$email,
+    user_role = user_filtered$user_role,
+    user_created = user_filtered$created_at,
+    abbreviation = user_filtered$abbreviation,
+    orcid = user_filtered$orcid,
+    iat = user_filtered$iat,
+    exp = user_filtered$exp)
+
+    jwt <- jwt_encode_hmac(claim, secret = key)
+    jwt
+  }
+}
+
+
+#* @tag authentication
+#* does user authentication
+#* @serializer json list(na="string")
+#' @get /api/auth/signin
+function(req, res) {
+  # load secret and convert to raw
+  key <- charToRaw(dw$secret)
+
+  # load jwt from header
+  jwt <- str_remove(req$HTTP_AUTHORIZATION, "Bearer ")
+
+  user <- jwt_decode_hmac(jwt, secret = key)
+  user$token_expired <- (user$exp < as.numeric(Sys.time()))
+
+  if (is.null(jwt) || user$token_expired) {
+    res$status <- 401 # Unauthorized
+    return(list(error = "Authentication not successful."))
+  } else {
+    return(list(user_id = user$user_id,
+      user_name = user$user_name,
+      email = user$email,
+      user_role = user$user_role,
+      user_created = user$user_created,
+      abbreviation = user$abbreviation,
+      orcid = user$orcid,
+      exp = user$exp))
+  }
+}
+
+
+#* @tag authentication
+#* does authentication refresh
+#* @serializer json list(na="string")
+#' @get /api/auth/refresh
+function(req, res) {
+  # load secret and convert to raw
+  key <- charToRaw(dw$secret)
+
+  # load jwt from header
+  jwt <- str_remove(req$HTTP_AUTHORIZATION, "Bearer ")
+
+  user <- jwt_decode_hmac(jwt, secret = key)
+  user$token_expired <- (user$exp < as.numeric(Sys.time()))
+
+  if (is.null(jwt) || user$token_expired) {
+    res$status <- 401 # Unauthorized
+    return(list(error = "Authentication not successful."))
+  } else {
+    claim <- jwt_claim(user_id = user$user_id,
+      user_name = user$user_name,
+      email = user$email,
+      user_role = user$user_role,
+      user_created = user$user_created,
+      abbreviation = user$abbreviation,
+      orcid = user$orcid,
+      iat = as.numeric(Sys.time()),
+      exp = as.numeric(Sys.time()) + dw$refresh)
+
+    jwt <- jwt_encode_hmac(claim, secret = key)
+    jwt
+  }
+}
+
+##Authentication section
 ##-------------------------------------------------------------------##
