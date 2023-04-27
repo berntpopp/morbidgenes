@@ -35,7 +35,7 @@ user <- tibble(
   add_row(user_id = 1,
     user_name = "Admin",
     password = "testpassword1234",
-    email = "admin@sysndd.org",
+    email = "admin@morbidgenes.org",
     user_role = "Administrator",
     orcid = "",
     first_name = "Bernt",
