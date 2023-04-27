@@ -121,7 +121,7 @@ non_alt_loci_set_coordinates <- non_alt_loci_set %>%
   ) %>% 
   dplyr::select(-hg19_coordinates_from_ensembl, -hg19_coordinates_from_symbol, -hg38_coordinates_from_ensembl, -hg38_coordinates_from_symbol)
 
-mb_genes_hgnc_connect <- non_alt_loci_set_coordinates %>%
+mg_genes_hgnc_connect <- non_alt_loci_set_coordinates %>%
   dplyr::select(hgnc_id) %>%
   mutate(is_active = TRUE)
 
@@ -136,6 +136,6 @@ creation_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%
 write_csv(non_alt_loci_set_coordinates, file = paste0("results/non_alt_loci_set_coordinates.",creation_date,".csv"))
 gzip(paste0("results/non_alt_loci_set_coordinates.",creation_date,".csv"), overwrite = TRUE)
 
-write_csv(mb_genes_hgnc_connect, file = paste0("results/mb_genes_hgnc_connect.",creation_date,".csv"))
-gzip(paste0("results/mb_genes_hgnc_connect.",creation_date,".csv"), overwrite = TRUE)
+write_csv(mg_genes_hgnc_connect, file = paste0("results/mg_genes_hgnc_connect.",creation_date,".csv"))
+gzip(paste0("results/mg_genes_hgnc_connect.",creation_date,".csv"), overwrite = TRUE)
 ############################################

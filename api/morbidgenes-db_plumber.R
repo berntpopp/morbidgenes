@@ -169,24 +169,24 @@ function(res,
   filter_exprs <- generate_filter_expressions(filter)
 
   # get data from database
-  mb_panel_current_view <- pool %>%
+  mg_panel_current_view <- pool %>%
     tbl("view_panel_current") %>%
     collect()
 
-  mb_panel_current_table <- mb_panel_current_view %>%
+  mg_panel_current_table <- mg_panel_current_view %>%
     arrange(!!!rlang::parse_exprs(sort_exprs)) %>%
     filter(!!!rlang::parse_exprs(filter_exprs))
 
   # select fields from table based on input
   # using the helper function "select_tibble_fields"
-  mb_panel_current_table <- select_tibble_fields(mb_panel_current_table,
+  mg_panel_current_table <- select_tibble_fields(mg_panel_current_table,
     fields,
     "hgnc_id")
 
   # use the helper generate_cursor_pag_inf to
   # generate cursor pagination information from a tibble
-  mb_panel_pag_info <- generate_cursor_pag_inf(
-    mb_panel_current_table,
+  mg_panel_pag_info <- generate_cursor_pag_inf(
+    mg_panel_current_table,
     `page_size`,
     `page_after`,
     "hgnc_id")
@@ -194,15 +194,15 @@ function(res,
   # use the helper generate_tibble_fspec to
   # generate fields specs from a tibble
   # first for the unfiltered and unsubset table
-  mb_panel_current_fspec <- generate_tibble_fspec_mem(mb_panel_current_view,
+  mg_panel_current_fspec <- generate_tibble_fspec_mem(mg_panel_current_view,
     fspec)
   # then for the filtered/ subset one
-  mb_panel_current_table_fspec <- generate_tibble_fspec_mem(
-    mb_panel_current_table,
+  mg_panel_current_table_fspec <- generate_tibble_fspec_mem(
+    mg_panel_current_table,
     fspec)
   # assign the second to the first as filtered
-  mb_panel_current_fspec$fspec$count_filtered <-
-    mb_panel_current_table_fspec$fspec$count
+  mg_panel_current_fspec$fspec$count_filtered <-
+    mg_panel_current_table_fspec$fspec$count
 
   # compute execution time
   end_time <- Sys.time()
@@ -211,16 +211,16 @@ function(res,
 
   # add columns to the meta information from
   # generate_cursor_pag_inf function return
-  meta <- mb_panel_pag_info$meta %>%
+  meta <- mg_panel_pag_info$meta %>%
     add_column(tibble::as_tibble(list("sort" = sort,
     "filter" = filter,
     "fields" = fields,
-    "fspec" = mb_panel_current_fspec,
+    "fspec" = mg_panel_current_fspec,
     "executionTime" = execution_time)))
 
   # add host, port and other information to links from
   # the link information from generate_cursor_pag_inf function return
-  links <- mb_panel_pag_info$links %>%
+  links <- mg_panel_pag_info$links %>%
       pivot_longer(everything(), names_to = "type", values_to = "link") %>%
     mutate(link = case_when(
       link != "null" ~ paste0(
@@ -237,7 +237,7 @@ function(res,
   # generate object to return
   list(links = links,
     meta = meta,
-    data = mb_panel_pag_info$data)
+    data = mg_panel_pag_info$data)
 }
 
 

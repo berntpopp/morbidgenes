@@ -26,50 +26,50 @@ morbidgenes_db <- dbConnect(RMariaDB::MariaDB(), dbname = "morbidgenes_db", user
 
 ############################################
 ## make the primary keys auto increment
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int auto_increment;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY panel_id int auto_increment;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int auto_increment;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_hgnc_id int auto_increment;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_source_id int auto_increment;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_source_id int auto_increment;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int auto_increment;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int auto_increment;")
 dbClearResult(rs)
 
 ############################################
 ## make panel_id in all tables compatible as int
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int NOT NULL;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY panel_id int NOT NULL;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_id int NOT NULL;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_id int NOT NULL;")
 dbClearResult(rs)
 
 ############################################
 ## make panel_hgnc_id in all tables compatible as int
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int NOT NULL;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_hgnc_id int NOT NULL;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
 dbClearResult(rs)
 
 ############################################
 ## make source_id in all tables compatible as int
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY source_id int NOT NULL;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY source_id int NOT NULL;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int NOT NULL;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int NOT NULL;")
 dbClearResult(rs)
 
 
 ############################################
 ## add foreign key constrains
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (panel_id) REFERENCES morbidgenes_db.mb_panel_version(panel_id);")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join ADD FOREIGN KEY (panel_id) REFERENCES morbidgenes_db.mg_panel_version(panel_id);")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.mb_genes_hgnc_connect(hgnc_id);")
-dbClearResult(rs)
-
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_genes_hgnc_connect ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.non_alt_loci_set_coordinates(hgnc_id);")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.mg_genes_hgnc_connect(hgnc_id);")
 dbClearResult(rs)
 
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join ADD FOREIGN KEY (panel_hgnc_id) REFERENCES morbidgenes_db.mb_panel_genes_join(panel_hgnc_id);")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_genes_hgnc_connect ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.non_alt_loci_set_coordinates(hgnc_id);")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join ADD FOREIGN KEY (source_id) REFERENCES morbidgenes_db.mb_source(source_id);")
+
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join ADD FOREIGN KEY (panel_hgnc_id) REFERENCES morbidgenes_db.mg_panel_genes_join(panel_hgnc_id);")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join ADD FOREIGN KEY (source_id) REFERENCES morbidgenes_db.mg_source(source_id);")
 dbClearResult(rs)
 
 
@@ -83,69 +83,69 @@ rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view
         `morbidgenes_db`.`non_alt_loci_set_coordinates`.`bed_hg19` AS `bed_hg19`,
         `morbidgenes_db`.`non_alt_loci_set_coordinates`.`bed_hg38` AS `bed_hg38`
     FROM
-        (`morbidgenes_db`.`mb_genes_hgnc_connect`
-        JOIN `morbidgenes_db`.`non_alt_loci_set_coordinates` ON ((`morbidgenes_db`.`mb_genes_hgnc_connect`.`hgnc_id` = `morbidgenes_db`.`non_alt_loci_set_coordinates`.`hgnc_id`)))
+        (`morbidgenes_db`.`mg_genes_hgnc_connect`
+        JOIN `morbidgenes_db`.`non_alt_loci_set_coordinates` ON ((`morbidgenes_db`.`mg_genes_hgnc_connect`.`hgnc_id` = `morbidgenes_db`.`non_alt_loci_set_coordinates`.`hgnc_id`)))
     WHERE
-        (`morbidgenes_db`.`mb_genes_hgnc_connect`.`is_active` = 1)")
+        (`morbidgenes_db`.`mg_genes_hgnc_connect`.`is_active` = 1)")
 dbClearResult(rs)
 
 
 # view_panel_genes
 rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes` AS
     SELECT 
-        `morbidgenes_db`.`mb_panel_version`.`panel_id` AS `panel_id`,
-        `morbidgenes_db`.`mb_panel_version`.`panel_version` AS `panel_version`,
-        `morbidgenes_db`.`mb_panel_genes_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
-        `morbidgenes_db`.`mb_panel_genes_join`.`hgnc_id` AS `hgnc_id`
+        `morbidgenes_db`.`mg_panel_version`.`panel_id` AS `panel_id`,
+        `morbidgenes_db`.`mg_panel_version`.`panel_version` AS `panel_version`,
+        `morbidgenes_db`.`mg_panel_genes_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
+        `morbidgenes_db`.`mg_panel_genes_join`.`hgnc_id` AS `hgnc_id`
     FROM
-        (`morbidgenes_db`.`mb_panel_version`
-        JOIN `morbidgenes_db`.`mb_panel_genes_join` ON ((`morbidgenes_db`.`mb_panel_version`.`panel_id` = `morbidgenes_db`.`mb_panel_genes_join`.`panel_id`)))
+        (`morbidgenes_db`.`mg_panel_version`
+        JOIN `morbidgenes_db`.`mg_panel_genes_join` ON ((`morbidgenes_db`.`mg_panel_version`.`panel_id` = `morbidgenes_db`.`mg_panel_genes_join`.`panel_id`)))
     WHERE
-        (`morbidgenes_db`.`mb_panel_version`.`is_current` = 1)")
+        (`morbidgenes_db`.`mg_panel_version`.`is_current` = 1)")
 dbClearResult(rs)
 
 
 # view_panel_genes_source
 rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_source` AS
     SELECT 
-        `morbidgenes_db`.`mb_panel_genes_source_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
+        `morbidgenes_db`.`mg_panel_genes_source_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'PanelApp') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'PanelApp') THEN 1
             ELSE 0
         END)) AS `PanelApp`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'AustraliaPanelApp') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'AustraliaPanelApp') THEN 1
             ELSE 0
         END)) AS `AustraliaPanelApp`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'HGMD_pathogenic') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'HGMD_pathogenic') THEN 1
             ELSE 0
         END)) AS `HGMD_pathogenic`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'Phenotype_MIM') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'Phenotype_MIM') THEN 1
             ELSE 0
         END)) AS `Phenotype_MIM`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'ClinVarPathogenic') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'ClinVarPathogenic') THEN 1
             ELSE 0
         END)) AS `ClinVarPathogenic`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'UKPanelApp') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'UKPanelApp') THEN 1
             ELSE 0
         END)) AS `UKPanelApp`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'SysNDD') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'SysNDD') THEN 1
             ELSE 0
         END)) AS `SysNDD`,
         MAX((CASE
-            WHEN (`morbidgenes_db`.`mb_source`.`source_name` = 'Manually') THEN 1
+            WHEN (`morbidgenes_db`.`mg_source`.`source_name` = 'Manually') THEN 1
             ELSE 0
         END)) AS `Manually`,
         COUNT(0) AS `mg_score`
     FROM
-        (`morbidgenes_db`.`mb_panel_genes_source_join`
-        JOIN `morbidgenes_db`.`mb_source` ON ((`morbidgenes_db`.`mb_panel_genes_source_join`.`source_id` = `morbidgenes_db`.`mb_source`.`source_id`)))
-    GROUP BY `morbidgenes_db`.`mb_panel_genes_source_join`.`panel_hgnc_id`")
+        (`morbidgenes_db`.`mg_panel_genes_source_join`
+        JOIN `morbidgenes_db`.`mg_source` ON ((`morbidgenes_db`.`mg_panel_genes_source_join`.`source_id` = `morbidgenes_db`.`mg_source`.`source_id`)))
+    GROUP BY `morbidgenes_db`.`mg_panel_genes_source_join`.`panel_hgnc_id`")
 dbClearResult(rs)
 
 
