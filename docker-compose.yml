@@ -42,7 +42,6 @@ services:
      - "10908-10917:10918"
   environment:
    PASSWORD: ${PASSWORD}
-   SMTP_PASSWORD: ${SMTP_PASSWORD}
    API_CONFIG: ${API_CONFIG}
  alb:
   image: 'dockercloud/haproxy:1.6.7'
