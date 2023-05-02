@@ -1,0 +1,3 @@
+user_id,user_name,password,email,user_role,approved,created_at
+1,Robin,password1salt1,Robin-Tobias.Jauss@medizin.uni-leipzig.de,Administrator,1,2023-05-02
+2,Bernt,password2salt2,bernt.popp@charite.de,Administrator,1,2023-05-02
