@@ -41,7 +41,16 @@ This project is licensed under the "BSD 3-Clause" License - see the LICENSE.md f
     - docker-compose
     - docker runtime or podman
 
+- MySQL data directory needs to be inside WSL because case sensitive file system is needed
+    - e.g. /home/username/morbidgenes
+
 
 ### Build
-- `docker-compose --env-file config_local.env up`
+- `docker-compose --env-file config_local.env up --build`
     - `config_local.env` configuration for local environment
+
+### Start
+- `docker-compose --env-file config_local.env up`
+
+### Stop
+- `docker-compose --env-file config_local.env down`

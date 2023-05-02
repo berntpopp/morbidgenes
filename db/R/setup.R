@@ -1,0 +1,11 @@
+install.packages(c(
+                    "devtools",
+                    "BiocManager", 
+                    "DBI", 
+                    "jsonlite", 
+                    "RCurl",
+                    "RMariaDB", 
+                    "tidyverse"
+              ))
+BiocManager::install("biomaRt")
+devtools::install_github("berntpopp/sqlr")

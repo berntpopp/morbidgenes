@@ -4,20 +4,24 @@ default:
     dbname: morbidgenes_db
     user: bernt
     password: "morbidgenes-db"
+    salt: "J/5rtdo-X=4="
     server: "0.0.0.0"
     host: "127.0.0.1"
     port: "9918"
-    port_self: "10918"
-    secret: QSnDcVt'Lg:8G+Q9LB,grz-~)tiZ|kr|X4m6nAd?'Pxv;w9PN9.uu$93a;9<PA4
+    secret: Y)B5[_sJ24;F:"0_)K8I6kElZ_u?=o[L[A<tu-^Gq;+#F2dl_,~J<H'S<b[0G@Q
     refresh: 360
+    base_url: "http://127.0.0.1"
+    api_base_url: "http://127.0.0.1:10918"
   morbidgenes_db:
     dbtype: mysql
     dbname: morbidgenes_db
     user: bernt
     password: "morbidgenes-db"
+    salt: "J/5rtdo-X=4="
     server: "0.0.0.0"
     host: "mysql"
     port: "3306"
-    port_self: "10918"
-    secret: QSnDcVt'Lg:8G+Q9LB,grz-~)tiZ|kr|X4m6nAd?'Pxv;w9PN9.uu$93a;9<PA4
+    secret: Y)B5[_sJ24;F:"0_)K8I6kElZ_u?=o[L[A<tu-^Gq;+#F2dl_,~J<H'S<b[0G@Q
     refresh: 3600
+    base_url: "https://morbidgenes.org"
+    api_base_url: "https://morbidgenes.org/alb"
