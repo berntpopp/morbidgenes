@@ -13,7 +13,6 @@ RUN npm install
 COPY . .
 # build app for production with minification
 RUN npm run build
-RUN npm audit fix
 
 
 # nginx builder for brotli module and modules needed for nonce generation
