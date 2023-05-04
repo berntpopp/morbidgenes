@@ -30,8 +30,8 @@
 
             <div class="text-lg-h6 pa-2">
               <v-btn block v-on:click="requestExcel" size="sm">
-                <v-icon v-if="!downloading">mdi-table-large</v-icon>
-                <v-icon v-if="!downloading">mdi-cloud-download</v-icon>
+                <v-icon v-if="!downloading">{{ icons.mdiTableLarge }}</v-icon>
+                <v-icon v-if="!downloading">{{ icons.mdiCloudDownload }}</v-icon>
                 <v-progress-circular
                   indeterminate
                   color="primary"
@@ -45,7 +45,7 @@
             <div class="pa-2">
                 <v-text-field
                   v-model="search"
-                  append-icon="mdi-magnify"
+                  :append-icon="icons.mdiMagnify"
                   label="Search"
                   single-line
                   hide-details
@@ -81,26 +81,31 @@
 
 
 <script>
+import { mdiTableLarge, mdiCloudDownload, mdiMagnify } from '@mdi/js';
+
 export default {
   name: 'Tables',
-  data() {
-        return {
-          panel: [],
-          headers:[
-            { text:'Panel', value: 'panel_version' },
-            { text:"HGNC ID", value:"hgnc_id" },
-            { text:"Symbol", value:"symbol" },
-            { text:"MG Score", value:"mg_score" },
-          ],
-          search: '',
-          totalRows: 1,
-          absolute: true,
-          opacity: 1,
-          color: "#FFFFFF",
-          loading: true,
-          downloading: false
-        }
+    data: () => ({
+      icons: {
+        mdiTableLarge,
+        mdiCloudDownload,
+        mdiMagnify
       },
+      panel: [],
+      headers:[
+        { text:'Panel', value: 'panel_version' },
+        { text:"HGNC ID", value:"hgnc_id" },
+        { text:"Symbol", value:"symbol" },
+        { text:"MG Score", value:"mg_score" },
+      ],
+      search: '',
+      totalRows: 1,
+      absolute: true,
+      opacity: 1,
+      color: "#FFFFFF",
+      loading: true,
+      downloading: false
+    }),
       computed: {
       },
       mounted() {
