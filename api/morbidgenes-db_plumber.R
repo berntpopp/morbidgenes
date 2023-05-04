@@ -403,7 +403,6 @@ function(req, res, user_name, password) {
     email = user_filtered$email,
     user_role = user_filtered$user_role,
     user_created = user_filtered$created_at,
-    abbreviation = user_filtered$abbreviation,
     orcid = user_filtered$orcid,
     iat = user_filtered$iat,
     exp = user_filtered$exp)
@@ -437,7 +436,6 @@ function(req, res) {
       email = user$email,
       user_role = user$user_role,
       user_created = user$user_created,
-      abbreviation = user$abbreviation,
       orcid = user$orcid,
       exp = user$exp))
   }
@@ -467,7 +465,6 @@ function(req, res) {
       email = user$email,
       user_role = user$user_role,
       user_created = user$user_created,
-      abbreviation = user$abbreviation,
       orcid = user$orcid,
       iat = as.numeric(Sys.time()),
       exp = as.numeric(Sys.time()) + dw$refresh)
