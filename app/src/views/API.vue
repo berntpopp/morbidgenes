@@ -1,33 +1,53 @@
 <template>
-<div class="iframe-container">
-    <iframe :src="source" allowfullscreen></iframe>
-</div>
+  <div class="container-fluid text-left py-2">
+    <div id="swagger" class="swagger" />
+  </div>
 </template>
 
 <script>
+import SwaggerUI from "swagger-ui";
+import "swagger-ui/dist/swagger-ui.css";
+
 export default {
-  name: "Swagger",
-  data() {
-        return {
-          source: process.env.VUE_APP_API_URL + '/__docs__/',
-        }
-  }
-}
+  name: "API",
+  metaInfo: {
+    // if no subcomponents specify a metaInfo.title, this title will be used
+    title: "API documentation",
+    // all titles will be injected into this template
+    titleTemplate:
+      "%s | HNF1B-db - The curated database for the HNF1B gene and associated diseases",
+    htmlAttrs: {
+      lang: "en",
+    },
+    meta: [
+      {
+        vmid: "description",
+        name: "description",
+        content: "This is the Swagger / OpenAPI documentation HNF1B-db.",
+      },
+    ],
+  },
+  mounted() {
+    this.loadAPIInfo();
+  },
+  methods: {
+    async loadAPIInfo() {
+      let apiURL = process.env.VUE_APP_API_URL + "/openapi.json";
+      SwaggerUI({
+        dom_id: "#swagger",
+        url: apiURL,
+        docExpansion: "none",
+        displayRequestDuration: true,
+        syntaxHighlight: { activate: true, theme: "obsidian" },
+      });
+    },
+  },
+};
 </script>
 
 <style scoped>
-.iframe-container {
-  overflow: hidden;
-  padding-top: 56.25%; /* 16:9*/
-  position: relative;
-}
-
-.iframe-container iframe {
-   border: 0;
-   height: 100%;
-   left: 0;
-   position: absolute;
-   top: 0;
-   width: 100%;
+:deep(.info) {
+  background-color: #ffffff !important;
+  color: #000 !important;
 }
 </style>
