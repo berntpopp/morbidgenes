@@ -34,6 +34,11 @@ dw <- config::get(Sys.getenv("API_CONFIG"))
 
 ##-------------------------------------------------------------------##
 ## global variables
+# define serializers
+serializers <- list(
+  "json" = serializer_json(),
+  "xlsx" = serializer_content_type(type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+)
 
 # time as GMT
 Sys.setenv(TZ = "GMT")
@@ -196,14 +201,19 @@ function(req, res) {
 #* @response 200 A cursor pagination object with links, meta information and gene objects in the data field.
 #* @response 500 Internal server error.
 #' @get /api/panel/
-function(res,
+function(req,
+  res,
   sort = "symbol",
   filter = "",
   fields = "",
   `page_after` = "",
   `page_size` = "all",
-  fspec = "panel_version,hgnc_id,symbol,bed_hg19,bed_hg38,PanelApp,AustraliaPanelApp,HGMD_pathogenic,Phenotype_MIM,ClinVarPathogenic,UKPanelApp,SysNDD,Manually,mg_score") {
+  fspec = "panel_version,hgnc_id,symbol,bed_hg19,bed_hg38,PanelApp,AustraliaPanelApp,HGMD_pathogenic,Phenotype_MIM,ClinVarPathogenic,UKPanelApp,SysNDD,Manually,mg_score",
+  format = "json") {
+  # set serializers
+  res$serializer <- serializers[[format]]
 
+  # TODO: most the following code needs to go into a function script
   start_time <- Sys.time()
 
   # generate sort expression based on sort input
@@ -279,12 +289,38 @@ function(res,
       pivot_wider(everything(), names_from = "type", values_from = "link")
 
   # generate object to return
-  list(links = links,
+  return_list <- list(links = links,
     meta = meta,
     data = mg_panel_pag_info$data)
+
+  # if xlsx requested compute this and return
+  if (format == "xlsx") {
+    # generate creation date statistic for output
+    creation_date <- strftime(as.POSIXlt(Sys.time(),
+      "UTC",
+      "%Y-%m-%dT%H:%M:%S"),
+      "%Y-%m-%d_T%H-%M-%S")
+
+    # generate base filename from api name
+    base_filename <- str_replace_all(req$PATH_INFO, "\\/", "_") %>%
+        str_replace_all("_api_", "")
+
+    filename <- file.path(paste0(base_filename,
+      "_",
+      creation_date,
+      ".xlsx"))
+
+    # generate xlsx bin using helper function
+    bin <- generate_xlsx_bin(return_list, base_filename)
+
+    # Return the binary contents
+    as_attachment(bin, filename)
+  } else {
+    return_list
+  }
 }
 
-
+# TODO: deprecate after implementing in UI
 #* @tag panel
 ## get current panel for download as Excel file
 #* @serializer contentType list(type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
