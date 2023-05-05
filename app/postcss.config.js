@@ -63,6 +63,8 @@ module.exports = {
             /v-text-field/,
             /v-input/,
             /v-select/,
+            /v-input__control/,
+            /v-input__slot/,
             /v-divider/,
             /v-card/,
             /v-expansion/,
