@@ -200,7 +200,7 @@ function(req, res) {
 #* @param fspec:str Fields to generate fied specification for.
 #* @response 200 A cursor pagination object with links, meta information and gene objects in the data field.
 #* @response 500 Internal server error.
-#' @get /api/panel/
+#' @get /api/panel
 function(req,
   res,
   sort = "symbol",

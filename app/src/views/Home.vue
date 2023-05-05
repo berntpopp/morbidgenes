@@ -100,6 +100,8 @@ export default {
       ],
       search: '',
       totalRows: 1,
+      sort: '', 
+      filter_string: '',
       absolute: true,
       opacity: 1,
       color: "#FFFFFF",
@@ -114,7 +116,7 @@ export default {
       methods: {
         async loadPanelData() {
           this.loading = true;
-          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel/';
+          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel';
           try {
             let response = await this.axios.get(apiUrl);
             this.panel = response.data.data;
@@ -126,28 +128,40 @@ export default {
         },
         async requestExcel() {
           this.downloading = true;
-          //based on https://morioh.com/p/f4d331b62cda
-          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel/excel/';
+
+          const urlParam = `sort=${
+            this.sort
+          }&filter=${
+            this.filter_string
+          }&page_after=`
+            + '0'
+            + '&page_size='
+            + 'all'
+            + '&format=xlsx';
+
+          const apiUrl = `${process.env.VUE_APP_API_URL
+          }/api/panel?${
+            urlParam}`;
+
           try {
-            await this.axios({
-                    url: apiUrl,
-                    method: 'GET',
-                    responseType: 'blob',
-                }).then((response) => {
-                     var fileURL = window.URL.createObjectURL(new Blob([response.data]));
-                     var fileLink = document.createElement('a');
+            const response = await this.axios({
+              url: apiUrl,
+              method: 'GET',
+              responseType: 'blob',
+            });
 
-                     fileLink.href = fileURL;
-                     fileLink.setAttribute('download', 'morbidgenes_current.xlsx');
-                     document.body.appendChild(fileLink);
+            const fileURL = window.URL.createObjectURL(new Blob([response.data]));
+            const fileLink = document.createElement('a');
 
-                     fileLink.click();
-                });
+            fileLink.href = fileURL;
+            fileLink.setAttribute('download', 'morbidgenes_panel.xlsx');
+            document.body.appendChild(fileLink);
 
+            fileLink.click();
           } catch (e) {
-            console.error(e);
+            console.log(e, "Error", "danger");
           }
-          
+
           this.downloading = false;
           
         },
