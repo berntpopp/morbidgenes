@@ -32,3 +32,4 @@
 ## Create Database
 - `cd morbidgenes/db/R`
 - `Rscript db_step01_create_tables-from-csv.R`
+- `Rscript db_step02_create-database-tables-in-mysql.R`
