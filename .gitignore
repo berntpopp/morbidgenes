@@ -19,6 +19,7 @@ app/docker/nginx/key.pem
 
 # Output files from R CMD build
 /*.tar.gz
+/db/R/results/*
 
 # Output files from R CMD check
 /*.Rcheck/
