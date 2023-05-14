@@ -1,26 +1,37 @@
 ############################################
 ## load libraries
-library(tidyverse)  ##needed for general table operations
-library(DBI)    ##needed for MySQL data export
-library(RMariaDB)  ##needed for MySQL data export
-library(sqlr)    ##needed for MySQL data export
+library(tidyverse)  ## needed for general table operations
+library(DBI)    ## needed for MySQL data export
+library(RMariaDB)  ## needed for MySQL data export
+library(sqlr)    ## needed for MySQL data export
+library(config)    ## needed for config loading
 ############################################
 
 
-
 ############################################
+## define relative script path
+subfolder_path <- "/db/R/"
+## read config
+config_vars <- config::get(file = Sys.getenv("CONFIG_FILE"))
 ## set working directory
-# TODO: needs to be adapted to your specific working directory
-setwd("C:/development/morbidgenes/db/R")
+setwd(paste0(config_vars$projectsdir, subfolder_path))
+############################################
+
+
+############################################
 ## set global options
 options(scipen = 999)
 ############################################
 
 
-
 ############################################
 ## connect to the database
-morbidgenes_db <- dbConnect(RMariaDB::MariaDB(), dbname = "morbidgenes_db", user = "root", password = "morbidgenes-db", server = "127.0.0.1", port = "9918")
+morbidgenes_db <- dbConnect(RMariaDB::MariaDB(),
+    dbname = config_vars$dbname,
+    user = config_vars$username,
+    password = config_vars$password,
+    server = config_vars$server,
+    port = config_vars$port)
 ############################################
 
 

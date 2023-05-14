@@ -1,0 +1,10 @@
+# this is a dummy config file, please copy this file to config.yml and replace variables accordingly
+default:
+  projectsdir: "<replace with path project>"
+db_setup:
+  dbtype: mysql
+  dbname: morbidgenes_db
+  username: <replace with username>
+  password: <replace with password>
+  server: <replace with server ip>
+  port: <replace with port>

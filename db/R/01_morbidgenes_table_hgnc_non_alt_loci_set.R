@@ -3,6 +3,23 @@
 library(tidyverse)  ## needed for general table operations
 library(biomaRt)  ## needed to get gene coordinates
 library("R.utils")  ## gzip downloaded files
+library(config)    ## needed for config loading
+############################################
+
+
+############################################
+## define relative script path
+subfolder_path <- "/db/R/"
+## read config
+config_vars <- config::get(file = Sys.getenv("CONFIG_FILE"))
+## set working directory
+setwd(paste0(config_vars$projectsdir, subfolder_path))
+############################################
+
+
+############################################
+## set global options
+options(scipen = 999)
 ############################################
 
 
@@ -11,17 +28,6 @@ library("R.utils")  ## gzip downloaded files
 # hgnc functions
 source("../functions/ensembl-functions.R", local = TRUE)
 ############################################
-
-
-
-############################################
-## set working directory
-# TODO: needs to be adapted to your specific working directory
-setwd("C:/development/morbidgenes/db/R")
-## set global options
-options(scipen = 999)
-############################################
-
 
 
 ############################################
