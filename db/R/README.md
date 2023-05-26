@@ -12,7 +12,7 @@ This repository contains a set of R scripts that are used to create and manage t
    - This script reads the CSV file "MorbidGenes-Panel-v2022-02.1.csv.gz", processes the data and creates four different tables: mg_panel_version, mg_panel_genes_join, mg_source and mg_panel_genes_source_join.
 Each table is then written to a gzipped CSV file in the results/ directory.
 
-3. **03_Rcommands_sysndd_db_table_user.R**
+3. **03_morbidgenes_db_create_table_user.R**
    - This script generates a user table that contains information about users, such as their usernames, passwords, emails, names, roles, and other details.
    - It currently generates data for two users: an administrator and a curator.
    - The table is then written to a gzipped CSV file in the results/ directory.

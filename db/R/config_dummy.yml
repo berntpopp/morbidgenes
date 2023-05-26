@@ -1,6 +1,7 @@
 # this is a dummy config file, please copy this file to config.yml and replace variables accordingly
 default:
   projectsdir: "<replace with path project>"
+  initial_user_pass: [<replace with random pass>,<replace with random pass>,<replace with random pass>,<replace with random pass>,<replace with random pass>]
 db_setup:
   dbtype: mysql
   dbname: morbidgenes_db
@@ -8,3 +9,4 @@ db_setup:
   password: <replace with password>
   server: <replace with server ip>
   port: <replace with port>
+  

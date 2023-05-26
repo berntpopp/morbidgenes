@@ -1,10 +1,10 @@
 ############################################
 ## load libraries
 library(tidyverse)  ## needed for general table operations
-library(DBI)    ## needed for MySQL data export
-library(RMariaDB)  ## needed for MySQL data export
-library(sqlr)    ## needed for MySQL data export
-library(config)    ## needed for config loading
+library(DBI)        ## needed for MySQL data export
+library(RMariaDB)   ## needed for MySQL data export
+library(sqlr)       ## needed for MySQL data export
+library(config)     ## needed for config loading
 ############################################
 
 
@@ -12,7 +12,10 @@ library(config)    ## needed for config loading
 ## define relative script path
 subfolder_path <- "/db/R/"
 ## read config
-config_vars <- config::get(file = Sys.getenv("CONFIG_FILE"))
+config_vars_default <- config::get(file = Sys.getenv("CONFIG_FILE"),
+    config = "default")
+config_vars_db <- config::get(file = Sys.getenv("CONFIG_FILE"),
+    config = "db_setup")
 ## set working directory
 setwd(paste0(config_vars$projectsdir, subfolder_path))
 ############################################
@@ -27,11 +30,11 @@ options(scipen = 999)
 ############################################
 ## connect to the database
 morbidgenes_db <- dbConnect(RMariaDB::MariaDB(),
-    dbname = config_vars$dbname,
-    user = config_vars$username,
-    password = config_vars$password,
-    server = config_vars$server,
-    port = config_vars$port)
+    dbname = config_vars_db$dbname,
+    user = config_vars_db$username,
+    password = config_vars_db$password,
+    server = config_vars_db$server,
+    port = config_vars_db$port)
 ############################################
 
 

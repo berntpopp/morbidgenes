@@ -20,6 +20,12 @@ gene_coordinates_from_symbol <- function(gene_symbols, reference = "hg19") {
     dplyr::select(hgnc_symbol = value)
 
   # define mart
+  mart_hg19 <- useMart("ensembl", host="grch37.ensembl.org")
+  mart_hg19 <- useDataset("hsapiens_gene_ensembl", mart_hg19)
+
+  mart_hg38 <- useMart("ensembl", host="ensembl.org")
+  mart_hg38 <- useDataset("hsapiens_gene_ensembl", mart_hg38)
+
   if (reference == "hg19") {
     mart <- useMart("ensembl", host = "grch37.ensembl.org")
     mart <- useDataset("hsapiens_gene_ensembl", mart_hg19)
@@ -66,6 +72,12 @@ gene_coordinates_from_ensembl <- function(ensembl_id, reference = "hg19") {
     dplyr::select(ensembl_gene_id = value)
 
   # define mart
+  mart_hg19 <- useMart("ensembl", host="grch37.ensembl.org")
+  mart_hg19 <- useDataset("hsapiens_gene_ensembl", mart_hg19)
+
+  mart_hg38 <- useMart("ensembl", host="ensembl.org")
+  mart_hg38 <- useDataset("hsapiens_gene_ensembl", mart_hg38)
+
   if (reference == "hg19") {
     mart <- useMart("ensembl", host = "grch37.ensembl.org")
     mart <- useDataset("hsapiens_gene_ensembl", mart_hg19)
