@@ -126,12 +126,11 @@ rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view
         `morbidgenes_db`.`mg_panel_version`.`panel_id` AS `panel_id`,
         `morbidgenes_db`.`mg_panel_version`.`panel_version` AS `panel_version`,
         `morbidgenes_db`.`mg_panel_genes_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
-        `morbidgenes_db`.`mg_panel_genes_join`.`hgnc_id` AS `hgnc_id`
+        `morbidgenes_db`.`mg_panel_genes_join`.`hgnc_id` AS `hgnc_id`,
+        `morbidgenes_db`.`mg_panel_version`.`is_current` AS `is_current`
     FROM
         (`morbidgenes_db`.`mg_panel_version`
-        JOIN `morbidgenes_db`.`mg_panel_genes_join` ON ((`morbidgenes_db`.`mg_panel_version`.`panel_id` = `morbidgenes_db`.`mg_panel_genes_join`.`panel_id`)))
-    WHERE
-        (`morbidgenes_db`.`mg_panel_version`.`is_current` = 1)")
+        JOIN `morbidgenes_db`.`mg_panel_genes_join` ON ((`morbidgenes_db`.`mg_panel_version`.`panel_id` = `morbidgenes_db`.`mg_panel_genes_join`.`panel_id`)))")
 dbClearResult(rs)
 
 
@@ -179,8 +178,8 @@ rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view
 dbClearResult(rs)
 
 
-# view_panel_current
-rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_current` AS
+# view_panel
+rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel` AS
     SELECT 
         `morbidgenes_db`.`view_panel_genes`.`panel_version` AS `panel_version`,
         `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id` AS `hgnc_id`,
@@ -195,7 +194,8 @@ rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view
         `morbidgenes_db`.`view_panel_genes_source`.`UKPanelApp` AS `UKPanelApp`,
         `morbidgenes_db`.`view_panel_genes_source`.`SysNDD` AS `SysNDD`,
         `morbidgenes_db`.`view_panel_genes_source`.`Manually` AS `Manually`,
-        `morbidgenes_db`.`view_panel_genes_source`.`mg_score` AS `mg_score`
+        `morbidgenes_db`.`view_panel_genes_source`.`mg_score` AS `mg_score`,
+        `morbidgenes_db`.`view_panel_genes`.`is_current` AS `is_current`
     FROM
         ((`morbidgenes_db`.`view_panel_genes`
         JOIN `morbidgenes_db`.`view_genes_hgnc` ON ((`morbidgenes_db`.`view_panel_genes`.`hgnc_id` = `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id`)))
