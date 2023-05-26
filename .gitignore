@@ -46,3 +46,6 @@ vignettes/*.pdf
 
 # R config
 db/R/config.yml
+
+# R config
+db/R/results/user.*
