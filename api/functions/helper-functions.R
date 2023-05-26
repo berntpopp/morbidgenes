@@ -82,7 +82,7 @@ generate_filter_expressions <- function(filter_string,
     logical_operator <- "and"
   }
 
-    # check if requested operations are supported, if not through error
+  # check if requested operations are supported, if not throw error
   if (all(operations_allowed %in% operations_supported)) {
     if (filter_string != "") {
 
@@ -101,13 +101,15 @@ generate_filter_expressions <- function(filter_string,
 
       filter_string_has_hash <- (nrow(filter_string_hash) >= 1)
 
-      # check if hash is present in database
-      table_hash_filter <- pool %>%
-        tbl("table_hash") %>%
-        collect() %>%
-        filter(hash_256 == filter_string_hash$filter_value[1])
+      if (filter_string_has_hash) {
+        # check if hash is present in database
+        table_hash_filter <- pool %>%
+          tbl("table_hash") %>%
+          collect() %>%
+          filter(hash_256 == filter_string_hash$filter_value[1])
 
-      hash_found <- (nrow(table_hash_filter) == 1)
+        hash_found <- (nrow(table_hash_filter) == 1)
+      }
 
       # compute filter expressions if hash keyword IS found
       if (filter_string_has_hash && hash_found) {

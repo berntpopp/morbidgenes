@@ -104,7 +104,6 @@ generate_tibble_fspec_mem <- memoise(generate_tibble_fspec,
 
 ##-------------------------------------------------------------------##
 ## hooks
-
 #* @plumber
 function(pr) {
 
@@ -204,7 +203,7 @@ function(req, res) {
 function(req,
   res,
   sort = "symbol",
-  filter = "",
+  filter = "equals(is_current,1)",
   fields = "",
   `page_after` = "",
   `page_size` = "all",
@@ -224,7 +223,7 @@ function(req,
 
   # get data from database
   mg_panel_current_view <- pool %>%
-    tbl("view_panel_current") %>%
+    tbl("view_panel") %>%
     collect()
 
   mg_panel_current_table <- mg_panel_current_view %>%
@@ -331,7 +330,8 @@ function(hgnc_id) {
 
   # get data from database and filter
   hgnc_collected <- pool %>%
-    tbl("view_panel_current") %>%
+    tbl("view_panel") %>%
+    filter(is_current == 1) %>%
     filter(hgnc_id == hgnc) %>%
     arrange(hgnc_id) %>%
     collect()
