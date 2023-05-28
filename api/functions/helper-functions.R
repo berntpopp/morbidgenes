@@ -1,7 +1,35 @@
 #### This file holds helper functions
 
-# generate sort expressions to parse
-generate_sort_expressions <- function(sort_string, unique_id = "hgnc_id") {
+
+#' Generate sort expressions to parse
+#'
+#' @description
+#' This function generates sort expressions based on a provided sort string.
+#' The sort string should contain column names separated by commas, with an
+#' optional "+" or "-" prefix indicating ascending or descending order,
+#' respectively. The function returns a list of expressions for sorting.
+#'
+#' @param sort_string A character string containing the column names to sort by,
+#'   separated by commas. Prefix column names with "+" for ascending order or
+#'   "-" for descending order.
+#' @param unique_id A character string representing the unique ID column name,
+#'   with a default value of "entity_id".
+#'
+#' @return
+#' A character vector containing sort expressions based on the input sort
+#' string and the unique ID column.
+#'
+#' @examples
+#' generate_sort_expressions("+name,-age")
+#' generate_sort_expressions("name,-age", unique_id = "id")
+#'
+#' @export
+#' @seealso
+#' For more information on how the sort string is parsed, see the following
+#' resources:
+#' \url{https://dplyr.tidyverse.org/reference/desc.html} for details on how
+#' the "desc()" function is used to sort in descending order.
+generate_sort_expressions <- function(sort_string, unique_id = "entity_id") {
 
   # split the sort input by comma and compute
   # directions based on presence of + or - in front of the string
@@ -17,7 +45,8 @@ generate_sort_expressions <- function(sort_string, unique_id = "hgnc_id") {
             str_sub(column, 1, 1) == "+" ~ str_sub(column, 2, -1),
             str_sub(column, 1, 1) == "-" ~ str_sub(column, 2, -1),
             TRUE ~ column,
-        )) %>%        mutate(exprs = case_when(
+        )) %>%
+        mutate(exprs = case_when(
             direction == "asc" ~ column,
             direction == "desc" ~ paste0("desc(", column, ")"),
         )) %>%
@@ -27,7 +56,7 @@ generate_sort_expressions <- function(sort_string, unique_id = "hgnc_id") {
 
     sort_list <- sort_tibble$exprs
 
-    # and check if hgnc_id is in the resulting list,
+    # and check if entity_id is in the resulting list,
     # if not append to the list for unique sorting
     if (!(unique_id %in% sort_list ||
         paste0("desc(", unique_id, ")") %in% sort_list)) {
@@ -38,13 +67,37 @@ generate_sort_expressions <- function(sort_string, unique_id = "hgnc_id") {
 }
 
 
-# generate filter expressions to parse
-# semantics according to https://www.jsonapi.net/usage/reading/filtering.html
-# currently only implemented "Equality" and "Contains text"
-# TODO: need to implement error handling
-# TODO: need to implement whether the respective columns exist
-# TODO: need to implement allowed Operations as input argument
-# TODO: need to implement column type handling
+#' Generate filter expressions to parse
+#'
+#' @description
+#' This function generates filter expressions based on a provided filter string.
+#' The filter string should follow the semantics defined by
+#' https://www.jsonapi.net/usage/reading/filtering.html. Currently, only the
+#' "Equality" and "Contains text" operations are implemented.
+#'
+#' @param filter_string A character string containing the filter conditions.
+#' @param operations_allowed A character string containing the allowed
+#'   operations, separated by commas (default:
+#'   "equals,contains,any,all,lessThan,greaterThan,lessOrEqual,greaterOrEqual").
+#'
+#' @return
+#' A character string containing the filter expression based on the input
+#' filter string and the allowed operations.
+#'
+#' @examples
+#' generate_filter_expressions("and(name, contains, 'John')")
+#' generate_filter_expressions("or(age, equals, '30')")
+#'
+#' @export
+#' @seealso
+#' For more information on the filtering semantics, see the following resource:
+#' \url{https://www.jsonapi.net/usage/reading/filtering.html}
+#'
+#' @note
+#' TODO: Implement error handling.
+#' TODO: Implement checking if the respective columns exist.
+#' TODO: Implement allowed operations as input argument.
+#' TODO: Implement column type handling.
 generate_filter_expressions <- function(filter_string,
     operations_allowed =
     "equals,contains,any,all,lessThan,greaterThan,lessOrEqual,greaterOrEqual") {
@@ -82,7 +135,7 @@ generate_filter_expressions <- function(filter_string,
     logical_operator <- "and"
   }
 
-  # check if requested operations are supported, if not throw error
+    # check if requested operations are supported, if not through error
   if (all(operations_allowed %in% operations_supported)) {
     if (filter_string != "") {
 
@@ -238,10 +291,35 @@ generate_filter_expressions <- function(filter_string,
 }
 
 
-# select requested fields from tibble
+#' Select requested fields from a tibble
+#'
+#' @description
+#' This function selects the requested fields from a given tibble. It ensures
+#' that the unique_id column is included in the output, even if it was not
+#' explicitly requested.
+#'
+#' @param selection_tibble A tibble containing the data to be filtered.
+#' @param fields_requested A character string containing the fields to be
+#'   selected, separated by commas. If an empty string is provided, all fields
+#'   will be selected.
+#' @param unique_id A character string specifying the unique identifier column
+#'   name (default: "entity_id").
+#'
+#' @return
+#' A tibble containing only the requested fields.
+#'
+#' @examples
+#' data <- tibble(a = 1:5, b = letters[1:5], entity_id = 101:105)
+#' select_tibble_fields(data, "a,b")
+#' select_tibble_fields(data, "")
+#'
+#' @export
+#' @seealso
+#' For more information on working with tibbles in R, see the following resource:
+#' \url{https://tibble.tidyverse.org/}
 select_tibble_fields <- function(selection_tibble,
   fields_requested,
-  unique_id = "hgnc_id") {
+  unique_id = "entity_id") {
 
   # get column names from selection_tibble
   tibble_colnames <- colnames(selection_tibble)
@@ -274,11 +352,42 @@ select_tibble_fields <- function(selection_tibble,
 }
 
 
-# generate cursor pagination information from a tibble
+#' Generate cursor pagination information from a tibble
+#'
+#' @description
+#' This function generates cursor-based pagination information from a tibble,
+#' providing the requested page and pagination links. It also includes metadata
+#' about the pagination state.
+#'
+#' @param pagination_tibble A tibble containing the data to be paginated.
+#' @param page_size A character or numeric value specifying the number of rows
+#'   per page. Use "all" for all rows in a single page (default: "all").
+#' @param page_after A numeric value indicating the item to start the page
+#'   after (default: 0).
+#' @param pagination_identifier A character string specifying the unique
+#'   identifier column name (default: "entity_id").
+#'
+#' @return
+#' A list containing three elements:
+#' - links: a tibble with URLs for the previous, self, next, and last pages.
+#' - meta: a tibble with pagination metadata, including the page size, current
+#'   page number, total pages, previous, current, and next item IDs, and total
+#'   items.
+#' - data: a tibble containing the requested page data.
+#'
+#' @examples
+#' data <- tibble(a = 1:10, b = letters[1:10], entity_id = 101:110)
+#' generate_cursor_pag_inf(data, 5)
+#' generate_cursor_pag_inf(data, 3, 104)
+#'
+#' @export
+#' @seealso
+#' For more information on cursor-based pagination, see the following resource:
+#' \url{https://www.sitepoint.com/paginating-real-time-data-cursor-based-pagination/}
 generate_cursor_pag_inf <- function(pagination_tibble,
   page_size = "all",
   page_after = 0,
-  pagination_identifier = "hgnc_id") {
+  pagination_identifier = "entity_id") {
 
   # get number of rows in filtered ndd_entity_view
   pagination_tibble_rows <- (pagination_tibble %>%
@@ -392,7 +501,27 @@ generate_cursor_pag_inf <- function(pagination_tibble,
 }
 
 
-# generate field specs from a tibble
+#' Generate field specifications from a tibble
+#'
+#' @description
+#' This function generates field specifications from a tibble,
+#' based on the given input. It includes information about the fields,
+#' such as whether they are filterable, selectable, multi-selectable,
+#' sortable, and their display labels.
+#'
+#' @param field_tibble A tibble containing the data for generating field specs.
+#' @param fspecInput A character string specifying the fields to include in the
+#'   output. If empty, all fields in the tibble are included (default: "").
+#'
+#' @return
+#' A list containing one element:
+#' - fspec: a tibble containing the generated field specifications.
+#'
+#' @examples
+#' data <- tibble(a = 1:10, b = letters[1:10], entity_id = 101:110)
+#' generate_tibble_fspec(data, "a,entity_id")
+#'
+#' @export
 generate_tibble_fspec <- function(field_tibble, fspecInput) {
 
     # get column names from field_tibble
@@ -459,69 +588,4 @@ generate_tibble_fspec <- function(field_tibble, fspecInput) {
   return_data <- list(fspec = fields_values)
 
   return(return_data)
-}
-
-
-#' Generate an xlsx file and return its binary info
-#'
-#' @description
-#'
-#' generate_xlsx_bin is an R function that creates a temporary
-#' Excel (xlsx) file with three sheets:'data', 'meta', and 'links',
-#' populated with the corresponding data from a given data object.
-#' The function then reads the binary content of the generated
-#' xlsx file and returns it. The temporary file is deleted
-#' once the binary content is read.
-#' The function performs the following steps:
-#'
-#' 1. Generate a temporary xlsx file path.
-#' 2. Write the 'data' element of the data object to the 'data' sheet.
-#' 3. Write the 'meta' element of the data object to the 'meta' sheet,
-#' excluding the 'fspec' column if present.
-#' 4. Write the 'links' element of the data object to the 'links' sheet.
-#' 5. Read the binary content of the generated xlsx file.
-#' 6. Delete the temporary xlsx file.
-#' 7. Return the binary content of the file.
-#'
-#' @param data_object A list containing three elements: 'data', 'meta', and 'links', each containing a data frame to be written to the respective sheets in the output Excel file.
-#' @param file_base_name A string representing the base name to be used for the temporary Excel file.
-#'
-#' @return The binary content of the generated xlsx file as a raw vector
-#' @export
-generate_xlsx_bin <- function(data_object, file_base_name) {
-
-  # generate excel file output
-  xlsx_file <- file.path(tempdir(),
-    paste0(file_base_name, ".xlsx"))
-
-  write.xlsx(data_object$data,
-    xlsx_file,
-    sheetName = "data",
-    append = FALSE)
-
-  # here we unselect the nested column fspec
-  # based on https://stackoverflow.com/questions/43786883/how-do-i-select-columns-that-may-or-may-not-exist
-  # TODO: instead of unselecting
-  # TODO: we could transform to string for all nested
-  write.xlsx(data_object$meta %>%
-      select(-any_of(c("fspec"))),
-    xlsx_file,
-    sheetName = "meta",
-    append = TRUE)
-
-  write.xlsx(data_object$links,
-    xlsx_file,
-    sheetName = "links",
-    append = TRUE)
-
-  # Read in the raw contents of the binary file
-  bin <- readBin(xlsx_file, "raw", n = file.info(xlsx_file)$size)
-
-  # Check file existence and delete
-  if (file.exists(xlsx_file)) {
-    file.remove(xlsx_file)
-  }
-
-  # return the binary contents
-  return(bin)
 }
