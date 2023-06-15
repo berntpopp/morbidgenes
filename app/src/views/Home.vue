@@ -83,6 +83,9 @@
 <script>
 import { mdiTableLarge, mdiCloudDownload, mdiMagnify } from '@mdi/js';
 
+// Importing URLs from a constants file to avoid hardcoding them in this component
+import URLS from '@/assets/js/constants/url_constants';
+
 export default {
   name: 'Tables',
     data: () => ({
@@ -116,7 +119,7 @@ export default {
       methods: {
         async loadPanelData() {
           this.loading = true;
-          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel';
+          let apiUrl = URLS.API_URL + '/api/panel';
           try {
             let response = await this.axios.get(apiUrl);
             this.panel = response.data.data;
@@ -139,7 +142,7 @@ export default {
             + 'all'
             + '&format=xlsx';
 
-          const apiUrl = `${process.env.VUE_APP_API_URL
+          const apiUrl = `${URLS.API_URL
           }/api/panel?${
             urlParam}`;
 
