@@ -30,8 +30,8 @@
 
             <div class="text-lg-h6 pa-2">
               <v-btn block v-on:click="requestExcel" size="sm">
-                <v-icon v-if="!downloading">mdi-table-large</v-icon>
-                <v-icon v-if="!downloading">mdi-cloud-download</v-icon>
+                <v-icon v-if="!downloading">{{ icons.mdiTableLarge }}</v-icon>
+                <v-icon v-if="!downloading">{{ icons.mdiCloudDownload }}</v-icon>
                 <v-progress-circular
                   indeterminate
                   color="primary"
@@ -45,7 +45,7 @@
             <div class="pa-2">
                 <v-text-field
                   v-model="search"
-                  append-icon="mdi-magnify"
+                  :append-icon="icons.mdiMagnify"
                   label="Search"
                   single-line
                   hide-details
@@ -81,26 +81,36 @@
 
 
 <script>
+import { mdiTableLarge, mdiCloudDownload, mdiMagnify } from '@mdi/js';
+
+// Importing URLs from a constants file to avoid hardcoding them in this component
+import URLS from '@/assets/js/constants/url_constants';
+
 export default {
   name: 'Tables',
-  data() {
-        return {
-          panel: [],
-          headers:[
-            { text:'Panel', value: 'panel_version' },
-            { text:"HGNC ID", value:"hgnc_id" },
-            { text:"Symbol", value:"symbol" },
-            { text:"MG Score", value:"mg_score" },
-          ],
-          search: '',
-          totalRows: 1,
-          absolute: true,
-          opacity: 1,
-          color: "#FFFFFF",
-          loading: true,
-          downloading: false
-        }
+    data: () => ({
+      icons: {
+        mdiTableLarge,
+        mdiCloudDownload,
+        mdiMagnify
       },
+      panel: [],
+      headers:[
+        { text:'Panel', value: 'panel_version' },
+        { text:"HGNC ID", value:"hgnc_id" },
+        { text:"Symbol", value:"symbol" },
+        { text:"MG Score", value:"mg_score" },
+      ],
+      search: '',
+      totalRows: 1,
+      sort: '', 
+      filter_string: '',
+      absolute: true,
+      opacity: 1,
+      color: "#FFFFFF",
+      loading: true,
+      downloading: false
+    }),
       computed: {
       },
       mounted() {
@@ -109,7 +119,7 @@ export default {
       methods: {
         async loadPanelData() {
           this.loading = true;
-          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel/';
+          let apiUrl = URLS.API_URL + '/api/panel';
           try {
             let response = await this.axios.get(apiUrl);
             this.panel = response.data.data;
@@ -121,28 +131,40 @@ export default {
         },
         async requestExcel() {
           this.downloading = true;
-          //based on https://morioh.com/p/f4d331b62cda
-          let apiUrl = process.env.VUE_APP_API_URL + '/api/panel/excel/';
+
+          const urlParam = `sort=${
+            this.sort
+          }&filter=${
+            this.filter_string
+          }&page_after=`
+            + '0'
+            + '&page_size='
+            + 'all'
+            + '&format=xlsx';
+
+          const apiUrl = `${URLS.API_URL
+          }/api/panel?${
+            urlParam}`;
+
           try {
-            await this.axios({
-                    url: apiUrl,
-                    method: 'GET',
-                    responseType: 'blob',
-                }).then((response) => {
-                     var fileURL = window.URL.createObjectURL(new Blob([response.data]));
-                     var fileLink = document.createElement('a');
+            const response = await this.axios({
+              url: apiUrl,
+              method: 'GET',
+              responseType: 'blob',
+            });
 
-                     fileLink.href = fileURL;
-                     fileLink.setAttribute('download', 'morbidgenes_current.xlsx');
-                     document.body.appendChild(fileLink);
+            const fileURL = window.URL.createObjectURL(new Blob([response.data]));
+            const fileLink = document.createElement('a');
 
-                     fileLink.click();
-                });
+            fileLink.href = fileURL;
+            fileLink.setAttribute('download', 'morbidgenes_panel.xlsx');
+            document.body.appendChild(fileLink);
 
+            fileLink.click();
           } catch (e) {
-            console.error(e);
+            console.log(e, "Error", "danger");
           }
-          
+
           this.downloading = false;
           
         },

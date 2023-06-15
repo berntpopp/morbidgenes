@@ -1,0 +1,16 @@
+# database config file
+config.yml
+# R files
+.Rhistory
+
+# Ignore the results directory in api folder
+results/*.json
+
+# Ignore the data directory in api folder
+data/*.gz
+
+# Ignore the log files in logs directory in api folder
+logs/*.log
+
+# ignore the development start script
+*_development.R
