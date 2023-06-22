@@ -1,4 +1,6 @@
 # this is a dummy database config file, please copy this file to config.yml and replace variables accordingly
+default:
+  project: morbidgenes
 db_setup:
   dbtype: mysql
   dbname: morbidgenes_db

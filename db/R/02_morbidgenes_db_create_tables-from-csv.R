@@ -10,14 +10,16 @@ library(tools)      ## needed for md5sum
 
 ############################################
 ## define relative script path
-subfolder_path <- "/db/R/"
+project_topic <- "morbidgenes"
+project_name <- "morbidgenes"
+script_path <- "/db/R/"
+
 ## read config
-config_vars_default <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "default")
-config_vars_db <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "db_setup")
+config_vars_proj <- config::get(file = Sys.getenv("CONFIG_FILE"),
+    config = project_topic)
+
 ## set working directory
-setwd(paste0(config_vars$projectsdir, subfolder_path))
+setwd(paste0(config_vars_proj$projectsdir, script_path))
 ############################################
 
 
@@ -25,7 +27,6 @@ setwd(paste0(config_vars$projectsdir, subfolder_path))
 # load global functions
 # hgnc functions
 source("functions/hgnc-functions.R", local = TRUE)
-source("functions/hpo-functions.R", local = TRUE)
 ############################################
 
 
@@ -45,13 +46,13 @@ results_csv_table <- list.files(path = analyses_paths,
   mutate(file_path = paste0(path, "/", file)) %>%
   mutate(file_basename = str_remove_all(file, "\\.csv\\.gz")) %>%
   separate(file_basename,
-    c("mg", "panel", "version_year", "version_month"),
+    c("analysis", "version"),
+    sep = "_") %>%
+  separate(version,
+    c("panel_version", "panel_date"),
     sep = "-") %>%
-  mutate(analysis = paste0(mg, "_", panel)) %>%
-  mutate(version_month = str_replace_all(version_month, "\\.", "_")) %>%
-  mutate(panel_version = paste0(version_year, "_", version_month)) %>%
-  mutate(panel_date = str_replace_all(panel_version, "_", "-")) %>%
-  mutate(panel_date = str_replace_all(panel_date, "v", "")) %>%
+  mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
+  mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
   mutate(panel_id = row_number()) %>%
   mutate(md5sum_import = md5sum(file_path)) %>%
   dplyr::select(panel_id,
@@ -60,7 +61,7 @@ results_csv_table <- list.files(path = analyses_paths,
     panel_version,
     panel_date,
     md5sum_import) %>%
-  filter(str_detect(file_path, "MorbidGenes-Panel")) %>%
+  filter(str_detect(file_path, "MorbidGenesPanel")) %>%
   group_by(analysis) %>%
   mutate(is_current = (max(panel_date) == panel_date)) %>%
   ungroup() %>%
@@ -109,11 +110,15 @@ morbidgenes_panel_hngc <- results_panels %>%
 
 ############################################
 ## create mg_panel_version table
-# TODO: add user from config or later in EP from token
 mg_panel_version <- results_csv_table %>%
-  select(panel_id, panel_version, panel_date, is_current) %>%
+  select(panel_id,
+    panel_version,
+    panel_date,
+    file_path,
+    md5sum_import,
+    is_current) %>%
   distinct() %>%
-  mutate(upload_user = 1)
+  mutate(upload_user = config_vars_proj$standard_user)
 ############################################
 
 

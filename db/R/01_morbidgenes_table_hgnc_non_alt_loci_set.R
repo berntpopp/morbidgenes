@@ -9,14 +9,16 @@ library(config)     ## needed for config loading
 
 ############################################
 ## define relative script path
-subfolder_path <- "/db/R/"
+project_topic <- "morbidgenes"
+project_name <- "morbidgenes"
+script_path <- "/db/R/"
+
 ## read config
-config_vars_default <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "default")
-config_vars_db <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "db_setup")
+config_vars_proj <- config::get(file = Sys.getenv("CONFIG_FILE"),
+    config = project_topic)
+
 ## set working directory
-setwd(paste0(config_vars$projectsdir, subfolder_path))
+setwd(paste0(config_vars_proj$projectsdir, script_path))
 ############################################
 
 
@@ -97,7 +99,7 @@ mg_genes_hgnc_connect <- non_alt_loci_set_coordinates %>%
 
 
 ############################################
-## export table as csv with date of creation
+## export table as csv with date of creation and gzip
 creation_date <- strftime(as.POSIXlt(Sys.time(),
     "UTC", "%Y-%m-%dT%H:%M:%S"),
   "%Y-%m-%d")
