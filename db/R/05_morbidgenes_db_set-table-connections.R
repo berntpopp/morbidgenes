@@ -19,11 +19,12 @@ script_path <- "/db/R/"
 config_vars_proj <- config::get(file = Sys.getenv("CONFIG_FILE"),
     config = project_topic)
 
-config_vars_db <- config::get(file = "./config.yml",
-    config = "db_setup")
-
 ## set working directory
 setwd(paste0(config_vars_proj$projectsdir, script_path))
+
+## load db config file
+config_vars_db <- config::get(file = "./config.yml",
+    config = "db_setup")
 ############################################
 
 
