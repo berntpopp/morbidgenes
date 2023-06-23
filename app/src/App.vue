@@ -51,7 +51,7 @@
           <v-card>
           <v-list dense>
               <v-list-item
-              v-for="item in items_small"
+              v-for="item in items"
               :key="`notification-key-${item.id}`"
               :to="item.to"
               link
@@ -75,14 +75,15 @@
     <v-footer padless>  
       <v-card-text class="text-center">  
         <v-btn  
-          v-for="footer_item in footer_items"  
-          :key="footer_item.icon"  
+          v-for="footer_item in footer_items"
+          :key="footer_item.icon"
           class="mx-4"  
           icon
-          :href="footer_item.to"  
-          :target="footer_item.target"  
-        >  
-          <v-icon size="24px" aria-hidden="false">  
+          :href="footer_item.to"
+          :target="footer_item.target"
+        :aria-label="footer_item.alt"
+        >
+          <v-icon size="24px" aria-hidden="false">
             {{ footer_item.icon }}  
           </v-icon>  
         </v-btn>  
@@ -98,7 +99,7 @@
 
 
 <script>  
-import { mdiAccount, mdiRefresh, mdiLogout, mdiDotsVertical, mdiGithub, mdiApi, mdiCopyright, mdiAlert } from '@mdi/js';  
+import { mdiDotsVertical, mdiGithub, mdiApi, mdiCopyright } from '@mdi/js';
 
 // Import the Banner component  
 import Banner from '@/components/small/Banner.vue';  
@@ -108,24 +109,20 @@ export default {
     Banner,  
   },  
   data: () => ({  
-    icons: {  
-      mdiAccount,  
-      mdiRefresh,  
-      mdiLogout,  
-      mdiDotsVertical,  
-      mdiGithub,  
-      mdiApi,  
-      mdiCopyright,  
-      mdiAlert  
-    },  
-    items: [  
+    icons: {
+      mdiDotsVertical,   
+      mdiGithub,   
+      mdiApi,   
+      mdiCopyright   
+    },
+    items: [
       {id: 'about', title: 'About', to: '/about'},  
-    ],  
-    footer_items: [  
+    ],
+    footer_items: [
       {icon: mdiGithub, to: 'https://github.com/berntpopp/morbidgenes', target: '_blank', alt: 'GitHub repository'},  
       {icon: mdiApi, to: '/API', target: '_self', alt: 'OpenAPI Swagger frontend'},  
       {icon: mdiCopyright, to: 'https://creativecommons.org/licenses/by/4.0/', target: '_blank', alt: 'License'}  
-    ],  
+    ],
   })
 }  
 </script> 
