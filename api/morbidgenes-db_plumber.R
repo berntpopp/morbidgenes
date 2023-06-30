@@ -22,6 +22,7 @@ library(memoise)
 library(coop)
 library(keyring)
 library(rlang)
+library(tools)      ## needed for md5sum
 ##-------------------------------------------------------------------##
 
 
@@ -37,7 +38,8 @@ dw <- config::get(Sys.getenv("API_CONFIG"))
 # define serializers
 serializers <- list(
   "json" = serializer_json(),
-  "xlsx" = serializer_content_type(type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  "xlsx" = serializer_content_type(type =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 )
 
 # time as GMT
@@ -68,6 +70,8 @@ options("plumber.apiURL" = dw$api_base_url)
 
 # load source files
 source("functions/helper-functions.R", local = TRUE)
+source("functions/file-functions.R", local = TRUE)
+source("functions/hgnc-functions.R", local = TRUE)
 
 # convert to memoise functions
 # Expire items in cache after 60 minutes
@@ -153,10 +157,6 @@ function(req, res) {
     # add user_id and user_role as value to request
     req$user_id <- as.integer(user$user_id)
     req$user_role <- user$user_role
-    # and forward request
-    plumber::forward()
-  } else if (req$REQUEST_METHOD == "POST" &&
-      (req$PATH_INFO == "/api/upload/csv")) {
     # and forward request
     plumber::forward()
   } else {
@@ -285,7 +285,7 @@ function(req,
         link),
       link == "null" ~ "null"
     )) %>%
-      pivot_wider(everything(), names_from = "type", values_from = "link")
+      pivot_wider(id_cols = everything(), names_from = "type", values_from = "link")
 
   # generate object to return
   return_list <- list(links = links,
@@ -337,6 +337,134 @@ function(hgnc_id) {
     collect()
 }
 ## Panel endpoints
+##-------------------------------------------------------------------##
+
+
+
+##-------------------------------------------------------------------##
+## Upload endpoints
+
+#* @tag upload
+#* Sends gene list file to server
+#* @param file:file to send
+#* @post /api/upload/panel
+function(req, res, file) {
+
+  # define user variables
+  upload_user_id <- req$user_id
+  print(upload_user_id)
+
+  # get file name
+  file_name <- basename(names(file))
+  print(file_name)
+
+  # generate tmp file path
+  tmp_file <- file.path("data", file_name)
+
+  # check if file exists already and delete if so
+  if (file.exists(tmp_file)) {
+    file.remove(tmp_file)
+  }
+
+  # write binary content to file
+  writeBin(file[[1]], tmp_file)
+
+  # Read file content
+  table <- read_delim(tmp_file,
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+  # compute md5sum of file
+  file_md5sum <- md5sum(tmp_file)
+  print(file_md5sum)
+
+  # get mg_panel_version data from database
+  # this is used to check if the uploaded file is already in the database and newer
+  # we deselect the panel_id as we need to get this later from the first insert into mg_panel_version and
+  # it is managed by the database
+  mg_panel_version_table <- pool %>%
+    tbl("mg_panel_version") %>%
+    collect() %>%
+    select(-panel_id, -upload_user)
+
+  # get mg_source data from database
+  # this is used to check for novel sources (columns) and assign them a source_id
+  mg_source_table <- pool %>%
+    tbl("mg_source") %>%
+    collect()
+
+  # logic
+  # 1) update mg_panel_version table
+  # 2) update mg_source table
+  # 3) update mg_panel_genes_join table
+  # 4) get the panel_hgnc_id from the mg_panel_genes_join table
+  # 5) generate mg_panel_genes_source_join table
+
+  # compute panel_version, panel_date from file name and is_current from database
+  # TODO: fix date computation from filename (currently 2023-01-1 instead of 2023-01-01)
+  file_version <- tmp_file %>%
+    as_tibble() %>%
+    select(file_path = value) %>%
+    separate(file_path, c("path", "file"), sep = "\\/") %>%
+    mutate(file_path = paste0(path, "/", file)) %>%
+    mutate(file_basename = str_remove_all(file, "\\.csv\\.gz")) %>%
+    separate(file_basename,
+      c("analysis", "version"),
+      sep = "_") %>%
+    separate(version,
+      c("panel_version", "panel_date"),
+      sep = "-") %>%
+    mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
+    mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
+    mutate(md5sum_import = md5sum(file_path)) %>%
+    dplyr::select(file_path,
+      panel_version,
+      panel_date,
+      md5sum_import) %>%
+    filter(str_detect(file_path, "MorbidGenesPanel"))
+
+  file_version_max <- bind_rows(mg_panel_version_table, file_version) %>%
+      mutate(is_current = (max(panel_date) == panel_date))
+
+  # filter table and replace NA with FALSE
+  # panel_id is not present as we need to get this later from the first insert into mg_panel_version
+  table_filtered <- table %>%
+    filter(morbidscore != 0) %>%
+    select(symbol,
+      hgmd_pathogenic_cutoff,
+      clinvar_pathogenic_cutoff,
+      manually_added,
+      panelapp,
+      panelapp_UK,
+      panelapp_australia,
+      sysndd,
+      omim_phenotype) %>%
+    replace(is.na(.), FALSE)
+
+  # compute hgnc_id from symbol
+  # this function is defined in the helper-functions.R script
+  # it currently uses the hgnc API to get the hgnc_id
+  # TODO: maybe speed this up by using our internal hgnc table
+  morbidgenes_panel_hngc <- table_filtered %>%
+    mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
+    select(hgnc_id,
+      hgmd_pathogenic_cutoff,
+      clinvar_pathogenic_cutoff,
+      manually_added,
+      panelapp,
+      panelapp_UK,
+      panelapp_australia,
+      sysndd,
+      omim_phenotype)
+
+  ## create mg_panel_version table
+  # TODO: add user from config or later in EP from token
+  # TODO: compute panel_version, panel_date and is_current from file name and
+  #       existing panel_version, panel_date and is_current in database
+
+
+}
+
+## Upload endpoints
 ##-------------------------------------------------------------------##
 
 
