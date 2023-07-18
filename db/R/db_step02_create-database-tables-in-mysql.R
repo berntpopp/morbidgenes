@@ -1,23 +1,16 @@
-############################################
-## load libraries
+# load libraries
 library(tidyverse)	##needed for general table operations
 library(DBI)		##needed for MySQL data export
 library(RMariaDB)	##needed for MySQL data export
 library(sqlr)		##needed for MySQL data export
 library(tools)		##needed for md5sum calculation
-############################################
 
-
-
-############################################
-## set working directory (needs to be adapted to your specific working directory)
+# set working directory (needs to be adapted to your specific working directory)
 setwd("./")
-## set global options
+# set global options
 options(scipen = 999)
-############################################
 
-############################################
-## connect to the database
+# connect to the database
 morbidgenes_db <- dbConnect(
 								RMariaDB::MariaDB(), 
 								dbname = "morbidgenes_db", 
@@ -26,10 +19,8 @@ morbidgenes_db <- dbConnect(
 								host = "127.0.0.1",
 								port = "9918"
 							)
-############################################
 
-############################################
-##  
+  
 import_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
 results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
@@ -55,19 +46,10 @@ results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
 
 results_csv_table_as_data_frame <- as.data.frame(results_csv_table)
 
-############################################
-
-
-
-############################################
 ## drop all tables if they exist
 drop_db_tbl("results_csv_table", force = TRUE)
 drop_db_tbl(results_csv_table_as_data_frame$table_name, force = TRUE)
-############################################
 
-
-
-############################################
 ##
 get_keys <- pk_spec(names(results_csv_table_as_data_frame)[1])
 write_db_tbl	(
@@ -97,11 +79,6 @@ for (row in 1:nrow(results_csv_table_as_data_frame)) {
 					char_set = "utf8"
 				)
 }
-############################################
 
-
-
-############################################
 ## close database connection
 rm_con()
-############################################
