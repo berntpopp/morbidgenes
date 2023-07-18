@@ -19,7 +19,14 @@ options(scipen = 999)
 
 ############################################
 ## connect to the database
-morbidgenes_db <- dbConnect(RMariaDB::MariaDB(), dbname = "morbidgenes_db", user = "root", password = "morbidgenes-db", server = "127.0.0.1", port = "9918")
+morbidgenes_db <- dbConnect(
+								RMariaDB::MariaDB(), 
+								dbname = "morbidgenes_db", 
+								user = "root", 
+								password = "morbidgenes-db", 
+								host = "127.0.0.1",
+								port = "9918"
+							)
 ############################################
 
 
