@@ -3,6 +3,7 @@
 ## Folders an files
 - _data_: contains input files, vreated by Robin-Tobias Jauss
 - _results_: output folder
+- _connection_: Db connection settings for _sqlr_
 - _db_step01_create_tables-from-csv.R_: input in data folder csv-file is used to create tables in data folder
 - _db_step02_create-database-tables-in-mysql.R_: creates tables from rtesult folder and writes them in database
 - _db_step03_set-table-connections.R_: sets connections between tables in db
@@ -28,6 +29,12 @@
     - `sudo apt install r-base-core r-cran-xml2 libcurl4-openssl-dev libmariadb-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev`
 - install R-Packages
     - `sudo Rscript setup.R`
+
+### Check MySQL Database
+- MySQL is running in Docker with port 3306 mapped to hosts 9918
+- Test connection
+    - `mysql morbidgenes_db -h 172.25.96.1 --protocol=TCP --port=9918 --user root --password=morbidgenes-db`
+    - change host IP if needed
 
 ## Create Database
 - `cd morbidgenes/db/R`

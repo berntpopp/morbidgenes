@@ -1,0 +1,7 @@
+db_setup:
+  dbtype: mysql
+  dbname: morbidgenes_db
+  username: root
+  password: morbidgenes-db
+  host: 127.0.0.1
+  port: 9918
