@@ -1,21 +1,14 @@
-############################################
-## load libraries
+# load libraries
 library(tidyverse)		##needed for general table operations
 library(jsonlite)		##needed for HGNC requests
-############################################
 
-
-############################################
-## set working directory (needs to be adapted to your specific working directory)
+# set working directory (needs to be adapted to your specific working directory)
 setwd("./")
-## set global options
+# set global options
 options(scipen = 999)
-############################################
-
-
 
 ############################################
-## define functions
+# define functions
 
 hgnc_id_from_prevsymbol <- function(symbol_input)  {
 	symbol_request <- fromJSON(paste0("http://rest.genenames.org/search/prev_symbol/", symbol_input))
@@ -220,7 +213,7 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 
 
 ############################################
-## load csv file(s) and reformat
+# load csv file(s) and reformat
 MorbidGenes_Panel <- 	read_delim	(
 										"data/MorbidGenes-Panel-v2023-01.1.csv", 
 										delim = ";", 
@@ -260,7 +253,7 @@ MorbidGenes_Panel_hngc <- 	MorbidGenes_Panel %>%
 											)
 ############################################
 
-##### Create User table #####
+# Create User table
 table_date <- 	strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
 user <- tibble	(
@@ -448,4 +441,3 @@ write_csv(
 	file = paste0("results/mb_panel_genes_source_join.",creation_date,".csv")
 )
 #gzip(paste0("results/mb_panel_genes_source_join.",creation_date,".csv"))
-############################################

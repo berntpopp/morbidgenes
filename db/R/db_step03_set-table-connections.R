@@ -1,24 +1,15 @@
-############################################
-## load libraries
+# load libraries
 library(tidyverse)	##needed for general table operations
 library(DBI)		##needed for MySQL data export
 library(RMariaDB)	##needed for MySQL data export
 library(sqlr)		##needed for MySQL data export
-############################################
 
-
-
-############################################
-## set working directory (needs to be adapted to your specific working directory)
+# set working directory (needs to be adapted to your specific working directory)
 setwd("./")
-## set global options
+# set global options
 options(scipen = 999)
-############################################
 
-
-
-############################################
-## connect to the database
+# connect to the database
 morbidgenes_db <- dbConnect(
 								RMariaDB::MariaDB(), 
 								dbname = "morbidgenes_db", 
@@ -27,40 +18,31 @@ morbidgenes_db <- dbConnect(
 								host = "127.0.0.1",
 								port = "9918"
 							)
-############################################
 
-
-############################################
-## make the primary keys auto increment
+# make the primary keys auto increment
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int auto_increment;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int auto_increment;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_source_id int auto_increment;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int auto_increment;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int auto_increment;")
 
-############################################
-## make panel_id in all tables compatible as int
+# make panel_id in all tables compatible as int
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int NOT NULL;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_id int NOT NULL;")
 
-############################################
-## make panel_hgnc_id in all tables compatible as int
+# make panel_hgnc_id in all tables compatible as int
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int NOT NULL;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
 
-############################################
-## make source_id in all tables compatible as int
+# make source_id in all tables compatible as int
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY source_id int NOT NULL;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int NOT NULL;");
 
-############################################
-## make user_id in all tables compatible as int
+# make user_id in all tables compatible as int
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY upload_user int NOT NULL;")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int NOT NULL;");
 
-
-############################################
-## add foreign key constrains
+# add foreign key constrains
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (panel_id) REFERENCES morbidgenes_db.mb_panel_version(panel_id);")
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.mb_genes_hgnc_connect(hgnc_id);")
 
@@ -71,12 +53,6 @@ dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_jo
 
 dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version ADD FOREIGN KEY (upload_user) REFERENCES morbidgenes_db.user(user_id);")
 
-
-
-
-
-
-############################################
 ## create views
 # view_genes_hgnc
 dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_genes_hgnc` AS
@@ -210,7 +186,5 @@ dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel
         JOIN `morbidgenes_db`.`view_genes_hgnc` ON ((`morbidgenes_db`.`view_panel_genes_all`.`hgnc_id` = `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id`)))
         JOIN `morbidgenes_db`.`view_panel_genes_source` ON ((`morbidgenes_db`.`view_panel_genes_all`.`panel_hgnc_id` = `morbidgenes_db`.`view_panel_genes_source`.`panel_hgnc_id`)))")
 
-############################################
 ## close database connection
 rm_con()
-############################################
