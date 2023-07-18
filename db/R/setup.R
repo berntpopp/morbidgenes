@@ -1,11 +1,15 @@
-install.packages(c(
-                    "devtools",
-                    "BiocManager", 
-                    "DBI", 
-                    "jsonlite", 
-                    "RCurl",
-                    "RMariaDB", 
-                    "tidyverse"
-              ))
+install.packages  (       
+                        c(
+                              "devtools",
+                              "BiocManager", 
+                              "DBI", 
+                              "jsonlite", 
+                              "RCurl",
+                              "RMariaDB", 
+                              "tidyverse"
+                        ),
+                        repos="http://cran.us.r-project.org"
+                  )
+
 BiocManager::install("biomaRt")
 devtools::install_github("berntpopp/sqlr")
