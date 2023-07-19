@@ -11,8 +11,6 @@ setwd(config$working_directory)
 # set global options
 options(scipen = config$scipen)
 
-morbidgenes_db <- get_db_connection()
-
 results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
 						dplyr::as_tibble() %>%
 						tidyr::separate(value, c("table_name", "table_date", "extension"), sep = "\\.") %>%
