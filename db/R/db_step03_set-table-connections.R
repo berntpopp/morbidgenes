@@ -1,7 +1,5 @@
 # load libraries
 library(tidyverse)	##needed for general table operations
-library(DBI)		##needed for MySQL data export
-library(RMariaDB)	##needed for MySQL data export
 library(sqlr)		##needed for MySQL data export
 
 source('utils.R', chdir = TRUE)
@@ -13,14 +11,7 @@ setwd(config$working_directory)
 options(scipen = config$scipen)
 
 # connect to the database
-morbidgenes_db <- DBI::dbConnect(
-								RMariaDB::MariaDB(), 
-								dbname = "morbidgenes_db", 
-								user = "root", 
-								password = "morbidgenes-db", 
-								host = "127.0.0.1",
-								port = "9918"
-							)
+morbidgenes_db <- get_db_connection()
 
 # make the primary keys auto increment
 DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int auto_increment;")

@@ -1,7 +1,5 @@
 # load libraries
 library(tidyverse)	##needed for general table operations
-library(DBI)		##needed for MySQL data export
-library(RMariaDB)	##needed for MySQL data export
 library(sqlr)		##needed for MySQL data export
 library(tools)		##needed for md5sum calculation
 
@@ -13,15 +11,7 @@ setwd(config$working_directory)
 # set global options
 options(scipen = config$scipen)
 
-# connect to the database
-morbidgenes_db <- DBI::dbConnect(
-								RMariaDB::MariaDB(), 
-								dbname = "morbidgenes_db", 
-								user = "root", 
-								password = "morbidgenes-db", 
-								host = "127.0.0.1",
-								port = "9918"
-							)
+morbidgenes_db <- get_db_connection()
 
 results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
 						dplyr::as_tibble() %>%
