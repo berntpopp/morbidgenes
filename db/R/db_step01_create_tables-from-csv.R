@@ -11,34 +11,34 @@ options(scipen = 999)
 # define functions
 
 hgnc_id_from_prevsymbol <- function(symbol_input)  {
-	symbol_request <- fromJSON(paste0("http://rest.genenames.org/search/prev_symbol/", symbol_input))
+	symbol_request <- jsonlite::fromJSON(paste0("http://rest.genenames.org/search/prev_symbol/", symbol_input))
 
-	hgnc_id_from_symbol <- as_tibble(symbol_request$response$docs)
+	hgnc_id_from_symbol <- dplry::as_tibble(symbol_request$response$docs)
 	
 	hgnc_id_from_symbol <-	hgnc_id_from_symbol %>%
-							mutate(
+							dplry::mutate(
 								hgnc_id = 
 									if (exists('hgnc_id', where = hgnc_id_from_symbol)) 
 										hgnc_id 
 									else 
 										NA
 							) %>%
-							mutate(
+							dplry::mutate(
 								symbol = 
 									if (exists('symbol', where = hgnc_id_from_symbol)) 
 										symbol 
 									else 
 										""
 							) %>%
-							mutate(
+							dplry::mutate(
 								score = 
 									if (exists('score', where = hgnc_id_from_symbol)) 
 										score 
 									else 
 										0
 							) %>%
-							arrange(desc(score)) %>%
-							mutate(
+							dplry::arrange(desc(score)) %>%
+							dplry::mutate(
 								hgnc_id = as.integer(str_split_fixed(hgnc_id, ":", 2)[, 2])
 							)
 
@@ -48,34 +48,34 @@ hgnc_id_from_prevsymbol <- function(symbol_input)  {
 }
 
 hgnc_id_from_aliassymbol <- function(symbol_input)  {
-	symbol_request <- fromJSON(paste0("http://rest.genenames.org/search/alias_symbol/", symbol_input))
+	symbol_request <- jsonlite::fromJSON(paste0("http://rest.genenames.org/search/alias_symbol/", symbol_input))
 
-	hgnc_id_from_symbol <- as_tibble(symbol_request$response$docs)
+	hgnc_id_from_symbol <- dplry::as_tibble(symbol_request$response$docs)
 	
 	hgnc_id_from_symbol <- 	hgnc_id_from_symbol %>%
-							mutate(
+							dplry::mutate(
 								hgnc_id = 
 									if (exists('hgnc_id', where = hgnc_id_from_symbol)) 
 										hgnc_id 
 									else 
 										NA
 							) %>%
-							mutate(
+							dplry::mutate(
 								symbol = 
 									if (exists('symbol', where = hgnc_id_from_symbol)) 
 										symbol 
 									else 
 										""
 							) %>%
-							mutate(
+							dplry::mutate(
 								score = 
 									if (exists('score', where = hgnc_id_from_symbol)) 
 										score 
 									else 
 										0
 							) %>%
-							arrange(desc(score)) %>%
-							mutate(
+							dplry::arrange(desc(score)) %>%
+							dplry::mutate(
 								hgnc_id = as.integer(str_split_fixed(hgnc_id, ":", 2)[, 2])
 							)
 
@@ -85,119 +85,119 @@ hgnc_id_from_aliassymbol <- function(symbol_input)  {
 }
 
 hgnc_id_from_symbol <- function(symbol_tibble) {
-	symbol_list_tibble <- 	as_tibble(symbol_tibble) %>% 
-							select(symbol = value) %>% 
-							mutate(symbol = toupper(symbol))
+	symbol_list_tibble <- 	dplry::as_tibble(symbol_tibble) %>% 
+							dplry::select(symbol = value) %>% 
+							dplry::mutate(symbol = toupper(symbol))
 	
-	symbol_request <- fromJSON	(
+	symbol_request <- jsonlite::fromJSON	(
 									paste0	(
 												"http://rest.genenames.org/search/symbol/", 
 												str_c(symbol_list_tibble$symbol, collapse = "+OR+")
 											)
 								)
 
-	hgnc_id_from_symbol <- as_tibble(symbol_request$response$docs)
+	hgnc_id_from_symbol <- dplry::as_tibble(symbol_request$response$docs)
 	
 	hgnc_id_from_symbol <- 	hgnc_id_from_symbol %>%
-							mutate(
+							dplry::mutate(
 								hgnc_id = 
 									if (exists('hgnc_id', where = hgnc_id_from_symbol)) 
 										hgnc_id 
 									else 
 										NA
 							) %>%
-							mutate(
+							dplry::mutate(
 								symbol = 
 									if (exists('symbol', where = hgnc_id_from_symbol)) 
 										toupper(symbol) 
 									else ""
 							) %>%
-							mutate(
+							dplry::mutate(
 								hgnc_id = as.integer(str_split_fixed(hgnc_id, ":", 2)[, 2])
 							)
 		
 	return_tibble <- 	symbol_list_tibble %>% 
-						left_join(hgnc_id_from_symbol, by = "symbol") %>%
-						select(hgnc_id)
+						dplry::left_join(hgnc_id_from_symbol, by = "symbol") %>%
+						dplry::select(hgnc_id)
 
 	return(return_tibble)
 }
 
 
 symbol_from_hgnc_id <- function(hgnc_id_tibble) {
-	hgnc_id_list_tibble <- 	as_tibble(hgnc_id_tibble) %>% 
-							select(hgnc_id = value) %>%
-							mutate(hgnc_id = as.integer(hgnc_id))
+	hgnc_id_list_tibble <- 	dplry::as_tibble(hgnc_id_tibble) %>% 
+							dplry::select(hgnc_id = value) %>%
+							dplry::mutate(hgnc_id = as.integer(hgnc_id))
 	
-	hgnc_id_request <- fromJSON	(
+	hgnc_id_request <- jsonlite::fromJSON	(
 									paste0	(
 												"http://rest.genenames.org/search/hgnc_id/", 
 												str_c(hgnc_id_list_tibble$hgnc_id, collapse = "+OR+")
 											)
 								)
 
-	hgnc_id_from_hgnc_id <- as_tibble(hgnc_id_request$response$docs)
+	hgnc_id_from_hgnc_id <- dplry::as_tibble(hgnc_id_request$response$docs)
 	
 	hgnc_id_from_hgnc_id <- 	hgnc_id_from_hgnc_id %>%
-								mutate(
+								dplry::mutate(
 									hgnc_id = 
 										if (exists('hgnc_id', where = hgnc_id_from_hgnc_id)) 
 											hgnc_id 
 										else 
 											NA
 								) %>%
-								mutate(
+								dplry::mutate(
 									hgnc_id = 
 										if (exists('hgnc_id', where = hgnc_id_from_hgnc_id)) 
 											toupper(hgnc_id) 
 										else 
 											""
 								) %>%
-								mutate(
+								dplry::mutate(
 									hgnc_id = as.integer(str_split_fixed(hgnc_id, ":", 2)[, 2])
 								)
 		
 	return_tibble <- 	hgnc_id_list_tibble %>% 
-						left_join(hgnc_id_from_hgnc_id, by = "hgnc_id") %>%
-						select(symbol)
+						dplry::left_join(hgnc_id_from_hgnc_id, by = "hgnc_id") %>%
+						dplry::select(symbol)
 
 	return(return_tibble)
 }
 
 
 hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
-	input_tibble <- as_tibble(input_tibble)
+	input_tibble <- dplry::as_tibble(input_tibble)
 	
 	row_number <- nrow(input_tibble)
 	groups_number <- ceiling(row_number/request_max)
 	
 	input_tibble_request <- 	input_tibble %>%
-								mutate(group = sample(1:groups_number, row_number, replace=T)) %>%
-								group_by(group) %>%
-								mutate(response = hgnc_id_from_symbol(value)$hgnc_id) %>%
-								ungroup()
+								dplry::mutate(group = sample(1:groups_number, row_number, replace=T)) %>%
+								dplry::group_by(group) %>%
+								dplry::mutate(response = hgnc_id_from_symbol(value)$hgnc_id) %>%
+								dplry::ungroup()
 	
 	input_tibble_request_repair <- 	input_tibble_request %>%
 									filter(is.na(response)) %>%
-									select(value) %>%
+									dplry::select(value) %>%
 									unique() %>%
-									rowwise() %>%
-									mutate(
+									dplry::rowwise() %>%
+									dplry::mutate(
 										response = hgnc_id_from_prevsymbol(value)
 									) %>%
-									mutate(
+									dplry::mutate(
 										response = 
-											case_when(
+											dplry::case_when(
 												!is.na(response) ~ response, 
 												is.na(response) ~ hgnc_id_from_aliassymbol(value)
 											)
 									)
 	
 	input_tibble_request <- 	input_tibble_request %>%
-								left_join(input_tibble_request_repair, by = "value") %>%
-								mutate(
+								dplry::left_join(input_tibble_request_repair, by = "value") %>%
+								dplry::mutate(
 									response = 
-										case_when(
+										dplry::case_when(
 											!is.na(response.x) ~ response.x, 
 											is.na(response.x) ~ response.y
 										)
@@ -233,12 +233,12 @@ MorbidGenes_Panel <- 	read_delim	(
 											omim_phenotype, 
 											gencc
 						) %>% 
-						mutate(version = "v2023_01_1") %>% 
+						dplry::mutate(version = "v2023_01_1") %>% 
 						replace(is.na(.), FALSE)
 	
 # compute HGNC ID
 MorbidGenes_Panel_hngc <- 	MorbidGenes_Panel %>%
-							mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
+							dplry::mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
 							dplyr::select	(
 												hgnc_id, 
 												hgmd_pathogenic_cutoff, 
@@ -256,7 +256,7 @@ MorbidGenes_Panel_hngc <- 	MorbidGenes_Panel %>%
 # Create User table
 table_date <- 	strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
-user <- tibble	(
+user <- dplry::tibble	(
 		user_id = numeric(),
 		user_name = character(),
 		password = character(),
@@ -264,7 +264,7 @@ user <- tibble	(
 		user_role = character(),
 		approved = integer()
 	) %>%
-  	add_row(
+  	dplry::add_row(
 		user_id = 1, 
 		user_name = "Robin", 
 		password = "password1salt1", 
@@ -272,7 +272,7 @@ user <- tibble	(
 		user_role="Administrator", 
 		approved = 1
 	) %>%
-  	add_row(
+  	dplry::add_row(
 		user_id = 2, 
 		user_name = "Bernt", 
 		password = "password2salt2", 
@@ -280,25 +280,28 @@ user <- tibble	(
 		user_role="Administrator", 
 		approved = 1
 	) %>%
-  	arrange(user_id) %>%
-  	mutate(created_at = table_date)
+  	dplry::arrange(user_id) %>%
+  	dplry::mutate(created_at = table_date)
 
 
 
 ############################################
 ## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
 ## create mb_panel_version table
-mb_panel_version <- tibble(
+mb_panel_version <- dplry::tibble(
 	  panel_id = numeric(),
 	  panel_version = character(),
 	  panel_date = character(),
 	  is_current = logical(), 
 	  upload_user = integer()
 	) %>%
-  	add_row(
+  	dplry::add_row(
 			panel_id = 1, 
 			panel_version = "v2023_01_1", 
-			panel_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d"), is_current=TRUE, upload_user = 1)
+			panel_date = strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d"), 
+			is_current=TRUE, 
+			upload_user = 1
+	)
 
 ############################################
 ## USE THIS IF THIS IS NOT THE FIRST VERSION
@@ -313,10 +316,10 @@ mb_panel_version <- tibble(
 ## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
 ## create mb_panel_genes_join table
 mb_panel_genes_join <- 	MorbidGenes_Panel_hngc %>%
-						select(hgnc_id) %>%
-						mutate(panel_id = 1) %>% 
-						mutate(panel_hgnc_id = row_number()) %>%
-						select(panel_hgnc_id, panel_id, hgnc_id)
+						dplry::select(hgnc_id) %>%
+						dplry::mutate(panel_id = 1) %>% 
+						dplry::mutate(panel_hgnc_id = row_number()) %>%
+						dplry::select(panel_hgnc_id, panel_id, hgnc_id)
 
 ############################################
 ## USE THIS IF THIS IS NOT THE FIRST VERSION
@@ -333,9 +336,9 @@ mb_panel_genes_join <- 	MorbidGenes_Panel_hngc %>%
 ## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
 ## create mb_panel_genes_source_join table
 mb_panel_genes_source <- 	MorbidGenes_Panel_hngc %>%
-							mutate(panel_id = 1) %>% 
-							mutate(panel_hgnc_id = row_number()) %>% 
-							select(
+							dplry::mutate(panel_id = 1) %>% 
+							dplry::mutate(panel_hgnc_id = row_number()) %>% 
+							dplry::select(
 								panel_hgnc_id, 
 								hgmd_pathogenic_cutoff, 
 								clinvar_pathogenic_cutoff, 
@@ -347,7 +350,7 @@ mb_panel_genes_source <- 	MorbidGenes_Panel_hngc %>%
 								omim_phenotype, 
 								gencc
 							) %>% 
-							pivot_longer(
+							tidyr::pivot_longer(
 								!panel_hgnc_id, 
 								names_to = "source_name", 
 								values_to = "in_source"
@@ -379,21 +382,21 @@ mb_panel_genes_source <- 	MorbidGenes_Panel_hngc %>%
   #mutate(source_name = str_replace(source_name, "added", ""))
 
 mb_source <- 	mb_panel_genes_source %>%
-				select(source_name) %>%
+				dplry::select(source_name) %>%
 				unique() %>% 
-				mutate(source_id = row_number()) %>% 
-				mutate(source_logic = "dummy") %>% 
-				select(source_id, source_name, source_logic)
+				dplry::mutate(source_id = row_number()) %>% 
+				dplry::mutate(source_logic = "dummy") %>% 
+				dplry::select(source_id, source_name, source_logic)
 
 
 ############################################
 ## USE THIS SECTION IF THIS IS THE FIRST PANEL VERSION OR FIRST ID
 ## create mb_panel_genes_source_join table
 mb_panel_genes_source_join <- 	mb_panel_genes_source %>%
-								left_join(mb_source, by = "source_name") %>%
-								select(-source_name, -source_logic) %>% 
-								mutate(panel_hgnc_source_id = row_number()) %>%
-								select(panel_hgnc_source_id, panel_hgnc_id, source_id)
+								dplry::left_join(mb_source, by = "source_name") %>%
+								dplry::select(-source_name, -source_logic) %>% 
+								dplry::mutate(panel_hgnc_source_id = row_number()) %>%
+								dplry::select(panel_hgnc_source_id, panel_hgnc_id, source_id)
 
 ############################################
 ## USE THIS IF THIS IS NOT THE FIRST VERSION
