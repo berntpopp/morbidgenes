@@ -218,7 +218,7 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 ############################################
 # load csv file(s) and reformat
 MorbidGenes_Panel <- 	read_delim	(
-										"data/MorbidGenes-Panel-v2023-01.1.csv", 
+										paste0(config$data_directory, "MorbidGenes-Panel-v2023-01.1.csv"), 
 										delim = ";", 
 										escape_double = FALSE, 
 										trim_ws = TRUE
@@ -414,32 +414,37 @@ mb_panel_genes_source_join <- 	mb_panel_genes_source %>%
 
 ############################################
 ## export table as csv with date of creation
+user_file_name <- paste0(config$results_directory, "user.", get_current_date(), ".csv")
 write_csv(
 	user, 
-	file = paste0("results/user.",get_current_date(),".csv"),
+	file = user_file_name,
 	na = ""
 )
 
+mb_panel_version_file_name <- paste0(config$results_directory, "mb_panel_version.",get_current_date(), ".csv")
 write_csv(
 	mb_panel_version, 
-	file = paste0("results/mb_panel_version.",get_current_date(),".csv")
+	file = mb_panel_version_file_name
 )
-#gzip(paste0("results/mb_panel_version.",get_current_date(),".csv"))
+#gzip(mb_panel_version_file_name)
 
+mb_panel_genes_join_file_name <- paste0(config$results_directory, "mb_panel_genes_join.", get_current_date(), ".csv")
 write_csv(
 	mb_panel_genes_join, 
-	file = paste0("results/mb_panel_genes_join.",get_current_date(),".csv")
+	file = mb_panel_genes_join_file_name
 )
-#gzip(paste0("results/mb_panel_genes_join.",get_current_date(),".csv"))
+#gzip(mb_panel_genes_join_file_name)
 
+mb_source_file_name <- paste0(config$results_directory, "mb_source.",get_current_date(),".csv")
 write_csv(
 	mb_source, 
-	file = paste0("results/mb_source.",get_current_date(),".csv")
+	file = mb_source_file_name
 )
-#gzip(paste0("results/mb_source.",get_current_date(),".csv"))
+#gzip(mb_source_file_name)
 
+mb_panel_genes_source_join_file_name <- paste0(config$results_directory, "mb_panel_genes_source_join.",get_current_date(),".csv")
 write_csv(
 	mb_panel_genes_source_join, 
-	file = paste0("results/mb_panel_genes_source_join.",get_current_date(),".csv")
+	file = mb_panel_genes_source_join_file_name
 )
-#gzip(paste0("results/mb_panel_genes_source_join.",get_current_date(),".csv"))
+#gzip(mb_panel_genes_source_join_file_name)

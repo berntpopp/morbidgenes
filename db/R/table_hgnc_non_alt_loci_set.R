@@ -116,12 +116,12 @@ gene_coordinates_from_ensembl <- function(ensembl_id, reference = "hg19") {
 
 # download HGNC file
 hgnc_link <- "https://ftp.ebi.ac.uk/pub/databases/genenames/hgnc/tsv/non_alt_loci_set.txt"
-hgnc_file <- "data/non_alt_loci_set.txt"
+hgnc_file <- paste0(config$data_directory, "non_alt_loci_set.txt")
 download.file(hgnc_link, hgnc_file, mode = "wb")
 #gzip(hgnc_file)
 
 # load the downloaded HGNC file
-non_alt_loci_set <- 	read_delim(paste0(hgnc_file), "\t", col_names = TRUE) %>%
+non_alt_loci_set <- 	read_delim(hgnc_file, "\t", col_names = TRUE) %>%
 						dplyr::mutate(update_date = get_current_date()) 
 
 non_alt_loci_set_coordinates <- 	non_alt_loci_set %>%
@@ -154,14 +154,16 @@ mb_genes_hgnc_connect <- 	non_alt_loci_set_coordinates %>%
 
 # export table as csv with date of creation
 
+non_alt_loci_set_coordinates_file_name <- paste0(config$results_directory, "non_alt_loci_set_coordinates.", get_current_date(), ".csv")
 write_csv(
 	non_alt_loci_set_coordinates, 
-	file = paste0("results/non_alt_loci_set_coordinates.", get_current_date(), ".csv")
+	file = non_alt_loci_set_coordinates_file_name
 )
-#gzip(paste0("results/non_alt_loci_set_coordinates.",get_current_date(),".csv"))
+#gzip(non_alt_loci_set_coordinates_file_name)
 
+mb_genes_hgnc_connect_file_name <- paste0(config$results_directory, "mb_genes_hgnc_connect.",get_current_date(),".csv")
 write_csv(
 	mb_genes_hgnc_connect, 
-	file = paste0("results/mb_genes_hgnc_connect.",get_current_date(),".csv")
+	file = mb_genes_hgnc_connect_file_name
 )
-#gzip(paste0("results/mb_genes_hgnc_connect.",get_current_date(),".csv"))
+#gzip(mb_genes_hgnc_connect_file_name)

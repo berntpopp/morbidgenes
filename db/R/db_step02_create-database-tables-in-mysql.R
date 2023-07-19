@@ -11,13 +11,13 @@ setwd(config$working_directory)
 # set global options
 options(scipen = config$scipen)
 
-results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
+results_csv_table <- 	list.files(path = config$results_directory, pattern = ".csv$") %>%
 						dplyr::as_tibble() %>%
 						tidyr::separate(value, c("table_name", "table_date", "extension"), sep = "\\.") %>%
 						dplyr::mutate(file_name = paste0(table_name, ".", table_date, ".", extension)) %>%
 						dplyr::mutate(import_date = get_current_date()) %>%
 						dplyr::mutate(results_file_id = row_number()) %>%
-						dplyr::mutate(md5sum_file = tools::md5sum(paste0("results/", file_name))) %>%
+						dplyr::mutate(md5sum_file = tools::md5sum(paste0(config$results_directory, file_name))) %>%
 						dplyr::select	(
 											results_file_id, 
 											file_name, 
@@ -52,7 +52,7 @@ for (row in 1:nrow(results_csv_table_as_data_frame)) {
 	
 	table_to_import <- as.data.frame(
 										read_delim	(
-														paste0("results/", file_name),
+														paste0(config$results_directory, file_name),
 														",",
 														col_names = TRUE
 													)

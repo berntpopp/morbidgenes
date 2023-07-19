@@ -6,6 +6,8 @@ default:
   db_host: "127.0.0.1"
   db_port: "9918"
   working_directory: "./"
+  results_directory: "results/"
+  data_directory: "data/"
 
 test:
 
