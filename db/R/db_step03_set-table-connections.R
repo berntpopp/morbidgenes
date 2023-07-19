@@ -1,6 +1,5 @@
 # load libraries
 library(tidyverse)	##needed for general table operations
-library(sqlr)		##needed for MySQL data export
 
 source('utils.R', chdir = TRUE)
 config <- get_config()
@@ -11,45 +10,45 @@ setwd(config$working_directory)
 options(scipen = config$scipen)
 
 # connect to the database
-morbidgenes_db <- get_db_connection()
+db_connection <- get_db_connection()
 
 # make the primary keys auto increment
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int auto_increment;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int auto_increment;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_source_id int auto_increment;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int auto_increment;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int auto_increment;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int auto_increment;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int auto_increment;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_source_id int auto_increment;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int auto_increment;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.user MODIFY user_id int auto_increment;")
 
 # make panel_id in all tables compatible as int
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int NOT NULL;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_id int NOT NULL;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY panel_id int NOT NULL;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_id int NOT NULL;")
 
 # make panel_hgnc_id in all tables compatible as int
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int NOT NULL;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_join MODIFY panel_hgnc_id int NOT NULL;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
 
 # make source_id in all tables compatible as int
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY source_id int NOT NULL;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int NOT NULL;");
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join MODIFY source_id int NOT NULL;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_source MODIFY source_id int NOT NULL;");
 
 # make user_id in all tables compatible as int
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY upload_user int NOT NULL;")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int NOT NULL;");
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_version MODIFY upload_user int NOT NULL;")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.user MODIFY user_id int NOT NULL;");
 
 # add foreign key constrains
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (panel_id) REFERENCES morbidgenes_db.mb_panel_version(panel_id);")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.mb_genes_hgnc_connect(hgnc_id);")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (panel_id) REFERENCES morbidgenes_db.mb_panel_version(panel_id);")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_join ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.mb_genes_hgnc_connect(hgnc_id);")
 
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_genes_hgnc_connect ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.non_alt_loci_set_coordinates(hgnc_id);")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_genes_hgnc_connect ADD FOREIGN KEY (hgnc_id) REFERENCES morbidgenes_db.non_alt_loci_set_coordinates(hgnc_id);")
 
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join ADD FOREIGN KEY (panel_hgnc_id) REFERENCES morbidgenes_db.mb_panel_genes_join(panel_hgnc_id);")
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join ADD FOREIGN KEY (source_id) REFERENCES morbidgenes_db.mb_source(source_id);")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join ADD FOREIGN KEY (panel_hgnc_id) REFERENCES morbidgenes_db.mb_panel_genes_join(panel_hgnc_id);")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_genes_source_join ADD FOREIGN KEY (source_id) REFERENCES morbidgenes_db.mb_source(source_id);")
 
-DBI::dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mb_panel_version ADD FOREIGN KEY (upload_user) REFERENCES morbidgenes_db.user(user_id);")
+DBI::dbSendQuery(db_connection, "ALTER TABLE morbidgenes_db.mb_panel_version ADD FOREIGN KEY (upload_user) REFERENCES morbidgenes_db.user(user_id);")
 
 ## create views
 # view_genes_hgnc
-DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_genes_hgnc` AS
+DBI::dbSendQuery(db_connection, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_genes_hgnc` AS
     SELECT 
         `morbidgenes_db`.`non_alt_loci_set_coordinates`.`hgnc_id` AS `hgnc_id`,
         `morbidgenes_db`.`non_alt_loci_set_coordinates`.`symbol` AS `symbol`,
@@ -63,7 +62,7 @@ DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_
 
 
 # view_panel_genes
-DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes` AS
+DBI::dbSendQuery(db_connection, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes` AS
     SELECT 
         `morbidgenes_db`.`mb_panel_version`.`panel_id` AS `panel_id`,
         `morbidgenes_db`.`mb_panel_version`.`panel_version` AS `panel_version`,
@@ -76,7 +75,7 @@ DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_
         (`morbidgenes_db`.`mb_panel_version`.`is_current` = 1)")
 
 # view_panel_genes_all
-DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_all` AS
+DBI::dbSendQuery(db_connection, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_all` AS
     SELECT 
         `morbidgenes_db`.`mb_panel_version`.`panel_id` AS `panel_id`,
         `morbidgenes_db`.`mb_panel_version`.`panel_version` AS `panel_version`,
@@ -88,7 +87,7 @@ DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_
 
 
 # view_panel_genes_source
-DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_source` AS
+DBI::dbSendQuery(db_connection, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_source` AS
     SELECT 
         `morbidgenes_db`.`mb_panel_genes_source_join`.`panel_hgnc_id` AS `panel_hgnc_id`,
         MAX((CASE
@@ -135,7 +134,7 @@ DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_
 
 
 # view_panel_current
-DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_current` AS
+DBI::dbSendQuery(db_connection, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_current` AS
     SELECT 
         `morbidgenes_db`.`view_panel_genes`.`panel_version` AS `panel_version`,
         `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id` AS `hgnc_id`,
@@ -158,7 +157,7 @@ DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_
         JOIN `morbidgenes_db`.`view_panel_genes_source` ON ((`morbidgenes_db`.`view_panel_genes`.`panel_hgnc_id` = `morbidgenes_db`.`view_panel_genes_source`.`panel_hgnc_id`)))")
 
 # view_panel_all
-DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_all` AS
+DBI::dbSendQuery(db_connection, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_all` AS
     SELECT 
         `morbidgenes_db`.`view_panel_genes_all`.`panel_version` AS `panel_version`,
         `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id` AS `hgnc_id`,
@@ -179,6 +178,3 @@ DBI::dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_
         ((`morbidgenes_db`.`view_panel_genes_all`
         JOIN `morbidgenes_db`.`view_genes_hgnc` ON ((`morbidgenes_db`.`view_panel_genes_all`.`hgnc_id` = `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id`)))
         JOIN `morbidgenes_db`.`view_panel_genes_source` ON ((`morbidgenes_db`.`view_panel_genes_all`.`panel_hgnc_id` = `morbidgenes_db`.`view_panel_genes_source`.`panel_hgnc_id`)))")
-
-## close database connection
-sqlr::rm_con()
