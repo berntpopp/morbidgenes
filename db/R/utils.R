@@ -1,4 +1,12 @@
-get_current_date <- function(){
+# load libraries
+library(config)
+
+get_config <- function() {
+    # read config.yml values
+    return(config::get())
+}
+
+get_current_date <- function() {
     result <- strftime  (
                             as.POSIXlt  (
                                             Sys.time(), 
@@ -9,4 +17,8 @@ get_current_date <- function(){
                         )
 
     return(result)
+}
+
+get_db_connection <- function () {
+
 }

@@ -3,6 +3,14 @@ library(tidyverse)	## needed for general table operations
 library(biomaRt)	## needed to get gene coordinates
 #library("R.utils")	## gzip downloaded files
 
+source('utils.R', chdir = TRUE)
+config <- get_config()
+
+# set working directory (needs to be adapted to your specific working directory)
+setwd(config$working_directory)
+# set global options
+options(scipen = config$scipen)
+
 ## functions to get gene coordinates from symbol name using biomart
 
 # define mart
@@ -14,7 +22,7 @@ mart_hg38 <- useDataset("hsapiens_gene_ensembl", mart_hg38)
 
 # function to retrive bed format style gene coordinates
 gene_coordinates_from_symbol <- function(gene_symbols, reference = "hg19") {
-	gene_symbol_list <- 	dplry::as_tibble(gene_symbols) %>%
+	gene_symbol_list <- 	dplyr::as_tibble(gene_symbols) %>%
 							dplyr::select(hgnc_symbol = value)
 
 	if (reference == "hg19") {
@@ -34,14 +42,14 @@ gene_coordinates_from_symbol <- function(gene_symbols, reference = "hg19") {
 										values=values, 
 										mart=mart
 								) %>%
-								dplry::group_by(hgnc_symbol) %>%
-								dplry::summarise(
+								dplyr::group_by(hgnc_symbol) %>%
+								dplyr::summarise(
 									hgnc_symbol = max(hgnc_symbol), 
 									chromosome_name = max(chromosome_name), 
 									start_position = max(start_position), 
 									end_position = max(end_position)
 								) %>%
-								dplry::mutate(
+								dplyr::mutate(
 									bed_format = paste0("chr", chromosome_name, ":", start_position, "-", end_position)
 								) %>%
 								dplyr::select(
@@ -50,7 +58,7 @@ gene_coordinates_from_symbol <- function(gene_symbols, reference = "hg19") {
 								)
 	
 	gene_symbol_list_return <- 	gene_symbol_list %>%
-								dplry::left_join(
+								dplyr::left_join(
 									gene_coordinates_hg19, 
 									by = ("hgnc_symbol")
 								)
@@ -60,7 +68,7 @@ gene_coordinates_from_symbol <- function(gene_symbols, reference = "hg19") {
 
 # 
 gene_coordinates_from_ensembl <- function(ensembl_id, reference = "hg19") {
-	ensembl_id_list <- 	dplry::as_tibble(ensembl_id) %>%
+	ensembl_id_list <- 	dplyr::as_tibble(ensembl_id) %>%
 						dplyr::select(ensembl_gene_id = value)
 
 	if (reference == "hg19") {
@@ -80,14 +88,14 @@ gene_coordinates_from_ensembl <- function(ensembl_id, reference = "hg19") {
 									values=values, 
 									mart=mart
 								) %>%
-								dplry::group_by(ensembl_gene_id) %>%
-								dplry::summarise(
+								dplyr::group_by(ensembl_gene_id) %>%
+								dplyr::summarise(
 									ensembl_gene_id = max(ensembl_gene_id), 
 									chromosome_name = max(chromosome_name), 
 									start_position = max(start_position), 
 									end_position = max(end_position)
 								) %>%
-								dplry::mutate(
+								dplyr::mutate(
 									bed_format = paste0("chr", chromosome_name, ":", start_position, "-", end_position)
 								) %>%
 								dplyr::select(
@@ -106,35 +114,29 @@ gene_coordinates_from_ensembl <- function(ensembl_id, reference = "hg19") {
 
 ##-------------------------------------------------------------------------------##
 
-# set working directory (needs to be adapted to your specific working directory)
-setwd("./")
-# set global options
-options(scipen = 999)
-
 # download HGNC file
-file_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
-hgnc_link <- "http://ftp.ebi.ac.uk/pub/databases/genenames/hgnc/tsv/non_alt_loci_set.txt"
+hgnc_link <- "https://ftp.ebi.ac.uk/pub/databases/genenames/hgnc/tsv/non_alt_loci_set.txt"
 hgnc_file <- "data/non_alt_loci_set.txt"
 download.file(hgnc_link, hgnc_file, mode = "wb")
 #gzip(hgnc_file)
 
 # load the downloaded HGNC file
 non_alt_loci_set <- 	read_delim(paste0(hgnc_file), "\t", col_names = TRUE) %>%
-						dplry::mutate(update_date = file_date) 
+						dplyr::mutate(update_date = get_current_date()) 
 
 non_alt_loci_set_coordinates <- 	non_alt_loci_set %>%
-									dplry::mutate(hg19_coordinates_from_ensembl = gene_coordinates_from_ensembl(ensembl_gene_id)) %>%
-									dplry::mutate(hg19_coordinates_from_symbol = gene_coordinates_from_symbol(symbol)) %>%
-									dplry::mutate(hg38_coordinates_from_ensembl = gene_coordinates_from_ensembl(ensembl_gene_id, reference = "hg38")) %>%
-									dplry::mutate(hg38_coordinates_from_symbol = gene_coordinates_from_symbol(symbol, reference = "hg38")) %>% 
-									dplry::mutate(bed_hg19 =
-										dplry::case_when(
+									dplyr::mutate(hg19_coordinates_from_ensembl = gene_coordinates_from_ensembl(ensembl_gene_id)) %>%
+									dplyr::mutate(hg19_coordinates_from_symbol = gene_coordinates_from_symbol(symbol)) %>%
+									dplyr::mutate(hg38_coordinates_from_ensembl = gene_coordinates_from_ensembl(ensembl_gene_id, reference = "hg38")) %>%
+									dplyr::mutate(hg38_coordinates_from_symbol = gene_coordinates_from_symbol(symbol, reference = "hg38")) %>% 
+									dplyr::mutate(bed_hg19 =
+										dplyr::case_when(
 											!is.na(hg19_coordinates_from_ensembl$bed_format) ~ hg19_coordinates_from_ensembl$bed_format,
 											is.na(hg19_coordinates_from_ensembl$bed_format) ~ hg19_coordinates_from_symbol$bed_format,
 										)
 									) %>% 
-									dplry::mutate(bed_hg38 =
-										dplry::case_when(
+									dplyr::mutate(bed_hg38 =
+										dplyr::case_when(
 											!is.na(hg38_coordinates_from_ensembl$bed_format) ~ hg38_coordinates_from_ensembl$bed_format,
 											is.na(hg38_coordinates_from_ensembl$bed_format) ~ hg38_coordinates_from_symbol$bed_format,
 										)
@@ -148,19 +150,18 @@ non_alt_loci_set_coordinates <- 	non_alt_loci_set %>%
 
 mb_genes_hgnc_connect <- 	non_alt_loci_set_coordinates %>%
 							dplyr::select(hgnc_id) %>%
-							dplry::mutate(is_active = TRUE)
+							dplyr::mutate(is_active = TRUE)
 
 # export table as csv with date of creation
-creation_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
 
 write_csv(
 	non_alt_loci_set_coordinates, 
-	file = paste0("results/DummyResults/non_alt_loci_set_coordinates.", creation_date, ".csv")
+	file = paste0("results/non_alt_loci_set_coordinates.", get_current_date(), ".csv")
 )
-#gzip(paste0("results/non_alt_loci_set_coordinates.",creation_date,".csv"))
+#gzip(paste0("results/non_alt_loci_set_coordinates.",get_current_date(),".csv"))
 
 write_csv(
 	mb_genes_hgnc_connect, 
-	file = paste0("results/DummyResults/mb_genes_hgnc_connect.",creation_date,".csv")
+	file = paste0("results/mb_genes_hgnc_connect.",get_current_date(),".csv")
 )
-#gzip(paste0("results/mb_genes_hgnc_connect.",creation_date,".csv"))
+#gzip(paste0("results/mb_genes_hgnc_connect.",get_current_date(),".csv"))

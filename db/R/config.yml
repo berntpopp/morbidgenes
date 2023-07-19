@@ -1,0 +1,20 @@
+default:
+  scipen: 999
+  db_name: "morbidgenes_db"
+  db_user: "root"
+  db_password: "morbidgenes-db"
+  db_host: "127.0.0.1"
+  db_port: "9918"
+  working_directory: "./"
+
+test:
+
+production:
+
+db_setup:
+  dbtype: mysql
+  dbname: morbidgenes_db
+  username: root
+  password: morbidgenes-db
+  host: 127.0.0.1
+  port: 9918

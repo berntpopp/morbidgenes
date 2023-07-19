@@ -4,10 +4,13 @@ library(DBI)		##needed for MySQL data export
 library(RMariaDB)	##needed for MySQL data export
 library(sqlr)		##needed for MySQL data export
 
+source('utils.R', chdir = TRUE)
+config <- get_config()
+
 # set working directory (needs to be adapted to your specific working directory)
-setwd("./")
+setwd(config$working_directory)
 # set global options
-options(scipen = 999)
+options(scipen = config$scipen)
 
 # connect to the database
 morbidgenes_db <- DBI::dbConnect(

@@ -1,5 +1,6 @@
 install.packages  (       
                         c(
+                              "config",
                               "devtools",
                               "BiocManager", 
                               "DBI", 

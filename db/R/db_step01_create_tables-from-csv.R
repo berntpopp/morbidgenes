@@ -3,11 +3,12 @@ library(tidyverse)		##needed for general table operations
 library(jsonlite)		##needed for HGNC requests
 
 source('utils.R', chdir = TRUE)
+config <- get_config()
 
 # set working directory (needs to be adapted to your specific working directory)
-setwd("./")
+setwd(config$working_directory)
 # set global options
-options(scipen = 999)
+options(scipen = config$scipen)
 
 ############################################
 # define functions
