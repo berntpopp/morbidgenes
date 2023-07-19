@@ -5,6 +5,8 @@ library(RMariaDB)	##needed for MySQL data export
 library(sqlr)		##needed for MySQL data export
 library(tools)		##needed for md5sum calculation
 
+source('utils.R', chdir = TRUE)
+
 # set working directory (needs to be adapted to your specific working directory)
 setwd("./")
 # set global options
@@ -20,16 +22,13 @@ morbidgenes_db <- DBI::dbConnect(
 								port = "9918"
 							)
 
-  
-import_date <- strftime(as.POSIXlt(Sys.time(), "UTC", "%Y-%m-%dT%H:%M:%S"), "%Y-%m-%d")
-
 results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
-						dplry::as_tibble() %>%
+						dplyr::as_tibble() %>%
 						tidyr::separate(value, c("table_name", "table_date", "extension"), sep = "\\.") %>%
-						dplry::mutate(file_name = paste0(table_name, ".", table_date, ".", extension)) %>%
-						dplry::mutate(import_date = import_date) %>%
-						dplry::mutate(results_file_id = row_number()) %>%
-						dplry::mutate(md5sum_file = tools::md5sum(paste0("results/", file_name))) %>%
+						dplyr::mutate(file_name = paste0(table_name, ".", table_date, ".", extension)) %>%
+						dplyr::mutate(import_date = get_current_date()) %>%
+						dplyr::mutate(results_file_id = row_number()) %>%
+						dplyr::mutate(md5sum_file = tools::md5sum(paste0("results/", file_name))) %>%
 						dplyr::select	(
 											results_file_id, 
 											file_name, 
@@ -39,10 +38,10 @@ results_csv_table <- 	list.files(path = "results/", pattern = ".csv$") %>%
 											import_date, 
 											md5sum_file
 										) %>%
-						dplry::mutate(table_date = as.Date(table_date)) %>% 
-						dplry::group_by(table_name) %>% 
-						dplry::filter(table_date == max(table_date)) %>% 
-						dplry::ungroup()
+						dplyr::mutate(table_date = as.Date(table_date)) %>% 
+						dplyr::group_by(table_name) %>% 
+						dplyr::filter(table_date == max(table_date)) %>% 
+						dplyr::ungroup()
 
 results_csv_table_as_data_frame <- as.data.frame(results_csv_table)
 
@@ -60,7 +59,7 @@ sqlr::write_db_tbl	(
 				)
 
 for (row in 1:nrow(results_csv_table_as_data_frame)) {
-	file_name <- dplry::slice(results_csv_table_as_data_frame, row)$file_name
+	file_name <- dplyr::slice(results_csv_table_as_data_frame, row)$file_name
 	
 	table_to_import <- as.data.frame(
 										read_delim	(
@@ -70,7 +69,7 @@ for (row in 1:nrow(results_csv_table_as_data_frame)) {
 													)
 									)
 	
-	get_table_name <- dplry::slice(results_csv_table_as_data_frame, row)$table_name
+	get_table_name <- dplyr::slice(results_csv_table_as_data_frame, row)$table_name
 	get_keys <- sqlr::pk_spec(names(table_to_import)[1])
 	sqlr::write_db_tbl	(	
 							name = get_table_name, 
