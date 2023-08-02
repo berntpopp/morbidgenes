@@ -37,12 +37,11 @@ generate_xlsx_bin <- function(data_object, file_base_name) {
     sheetName = "data",
     append = FALSE)
 
-  # here we unselect the nested column fspec
-  # based on https://stackoverflow.com/questions/43786883/how-do-i-select-columns-that-may-or-may-not-exist
-  # TODO: instead of unselecting
-  # TODO: we could transform to string for all nested
-  write.xlsx(data_object$meta %>%
-      select(-any_of(c("fspec"))),
+  # Transform all nested columns in meta to string
+  meta_transformed <- data_object$meta %>%
+      mutate(across(where(is.list), as.character))
+
+  write.xlsx(meta_transformed,
     xlsx_file,
     sheetName = "meta",
     append = TRUE)
