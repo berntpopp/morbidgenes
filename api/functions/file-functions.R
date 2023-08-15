@@ -62,3 +62,51 @@ generate_xlsx_bin <- function(data_object, file_base_name) {
   # return the binary contents
   return(bin)
 }
+
+
+#' Check if the basenames of Two Files Match
+#'
+#' This function checks if the basenames (excluding extensions) of two provided files match.
+#' The first file must have the extension ".csv.gz" and the second file must have the extension ".yml".
+#' If the basenames match, the function returns TRUE. If not, it throws an error.
+#'
+#' @param file1 A named list where the name is the path of the gzipped CSV file.
+#' @param file2 A named list where the name is the path of the YAML file.
+#'
+#' @return Logical TRUE if the basenames of the two files match.
+#' @export
+#'
+#' @examples
+#' # Assuming you have two files: "sample.csv.gz" and "sample.yml" in your working directory:
+#' check_filename_match(list("path/to/sample.csv.gz" = NULL), list("path/to/sample.yml" = NULL))
+#'
+check_filename_match <- function(file1, file2) {
+
+  # Extract the basenames
+  file1_name <- basename(names(file1))
+  file2_name <- basename(names(file2))
+
+  # check if first file has the extension ".csv.gz"
+  if (grepl(".csv.gz", file1_name)) {
+    base1 <- gsub(".csv.gz", "", file1_name)
+  } else {
+    stop("First file is not a .csv.gz file!")
+  }
+
+  # check if second file has the extension ".yml"
+  if (grepl(".yml", file2_name)) {
+    base2 <- gsub(".yml", "", file2_name)
+  } else {
+    stop("Second file is not a .yml file!")
+  }
+
+  # Check if the basenames match
+  if (base1 == base2) {
+
+    # Return TRUE if the basenames match
+    return(TRUE)
+
+  } else {
+    stop("The basenames of the files do not match!")
+  }
+}
