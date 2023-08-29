@@ -380,10 +380,11 @@ select_tibble_fields <- function(selection_tibble,
 #' generate_cursor_pag_inf(data, 5)
 #' generate_cursor_pag_inf(data, 3, 104)
 #'
-#' @export
 #' @seealso
 #' For more information on cursor-based pagination, see the following resource:
 #' \url{https://www.sitepoint.com/paginating-real-time-data-cursor-based-pagination/}
+#'
+#' @export
 generate_cursor_pag_inf <- function(pagination_tibble,
   page_size = "all",
   page_after = 0,
