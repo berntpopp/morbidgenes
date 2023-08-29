@@ -1,4 +1,5 @@
 # TODO: define column types for all tables
+# TODO: set constrains (is_current, is_active, ...)
 ############################################
 ## load libraries
 library(tidyverse)  ## needed for general table operations

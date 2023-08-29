@@ -101,7 +101,9 @@ generate_tibble_fspec_mem <- memoise(generate_tibble_fspec,
 #* @apiLicense list(name = "CC BY 4.0",
 #* url = "https://creativecommons.org/licenses/by/4.0/")
 
-#* @apiTag panel Endpoint to get the current MorbidGenes Panel
+#* @apiTag panel Endpoints to get information from the current MorbidGenes Panel
+#* @apiTag upload Endpoints to submit new data to the database
+#* @apiTag authentication Endpoints related to authentication
 ##-------------------------------------------------------------------##
 ##-------------------------------------------------------------------##
 
@@ -403,7 +405,7 @@ function(hgnc_id) {
 #* @param config_file:file Config file with column configuration.
 #*
 #* @response 200 Successful file upload and processing.
-#* @response 400 File with the same version already exists or error in processing.
+#* @response 400 File with the same version already exists or processing error.
 #* @response 401 Unauthorized if user is not authenticated.
 #*
 #* @post /api/upload/panel
@@ -476,7 +478,7 @@ function(req, res, panel_file, config_file) {
     dplyr::select(panel_version,
     panel_date,
     file_path,
-    md5sum_import,) %>%
+    md5sum_import) %>%
     filter(str_detect(file_path, "MorbidGenesPanel"))
 
     # check if ile is already in mg_panel_version table
@@ -547,7 +549,7 @@ function(req, res, panel_file, config_file) {
 
 #* User Login
 #*
-#* This endpoint authenticates users based on the provided username and password.
+#* This endpoint authenticates users based on username and password.
 #* It's based on the example from 'https://github.com/jandix/sealr/'.
 #*
 #* # `Details`
