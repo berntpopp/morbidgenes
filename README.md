@@ -14,10 +14,10 @@ The MorbidGenes panel is a comprehensive and open overview of clinically relevan
 Contributors names and contact info
 
 * Bernt Popp, [ORCID ID: 0000-0002-3679-1081](https://orcid.org/0000-0002-3679-1081), [@berntpopp](https://twitter.com/berntpopp)
-* Rami Abou Jamra, [ORCID ID: 0000-0002-1542-1399](https://orcid.org/0000-0002-1542-1399)
-* Konrad Platzer, [ORCID ID: 0000-0001-6127-6308](https://orcid.org/0000-0001-6127-6308)
+* Rami Abou Jamra, [ORCID ID: 0000-0002-1542-1399](https://orcid.org/0000-0002-1542-1399), [@RamiJamra](https://twitter.com/RamiJamra)
+* Konrad Platzer, [ORCID ID: 0000-0001-6127-6308](https://orcid.org/0000-0001-6127-6308), [@platzer_k](https://twitter.com/platzer_k)
 * Joachim Bachmann, [ORCID ID: 0000-0003-0552-6856](https://orcid.org/0000-0003-0552-6856)
-* Robin-Tobias Jauss, [ORCID ID: 0000-0002-8285-9155](https://orcid.org/0000-0002-8285-9155)
+* Robin-Tobias Jauss, [ORCID ID: 0000-0002-8285-9155](https://orcid.org/0000-0002-8285-9155), [@RTJauss](https://twitter.com/RTJauss)
 
 ## Version History
 
