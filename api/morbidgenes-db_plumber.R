@@ -72,6 +72,7 @@ options("plumber.apiURL" = dw$api_base_url)
 source("functions/helper-functions.R", local = TRUE)
 source("functions/file-functions.R", local = TRUE)
 source("functions/hgnc-functions.R", local = TRUE)
+source("functions/database-functions.R", local = TRUE)
 
 # convert to memoise functions
 # Expire items in cache after 60 minutes
