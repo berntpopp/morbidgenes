@@ -8,14 +8,16 @@ library(config)     ## needed for config loading
 
 ############################################
 ## define relative script path
-subfolder_path <- "/db/R/"
+project_topic <- "morbidgenes"
+project_name <- "morbidgenes"
+script_path <- "/db/R/"
+
 ## read config
-config_vars_default <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "default")
-config_vars_db <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "db_setup")
+config_vars_proj <- config::get(file = Sys.getenv("CONFIG_FILE"),
+    config = project_topic)
+
 ## set working directory
-setwd(paste0(config_vars$projectsdir, subfolder_path))
+setwd(paste0(config_vars_proj$projectsdir, script_path))
 ############################################
 
 
@@ -45,7 +47,7 @@ user <- tibble(
   ) %>%
   add_row(user_id = 1,
     user_name = "Admin",
-    password = config_vars$initial_user_pass[1],
+    password = config_vars_proj$initial_user_pass[1],
     email = "admin@morbidgenes.org",
     user_role = "Administrator",
     orcid = "",
@@ -55,7 +57,7 @@ user <- tibble(
     approved = 1) %>%
   add_row(user_id = 2,
     user_name = "Bernt",
-    password = config_vars$initial_user_pass[2],
+    password = config_vars_proj$initial_user_pass[2],
     email = "bernt.popp@gmail.com",
     user_role = "Curator",
     orcid = "0000-0002-3679-1081",

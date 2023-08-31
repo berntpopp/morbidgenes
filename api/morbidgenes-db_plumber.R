@@ -22,6 +22,7 @@ library(memoise)
 library(coop)
 library(keyring)
 library(rlang)
+library(tools)      ## needed for md5sum
 ##-------------------------------------------------------------------##
 
 
@@ -37,7 +38,8 @@ dw <- config::get(Sys.getenv("API_CONFIG"))
 # define serializers
 serializers <- list(
   "json" = serializer_json(),
-  "xlsx" = serializer_content_type(type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+  "xlsx" = serializer_content_type(type =
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 )
 
 # time as GMT
@@ -68,6 +70,9 @@ options("plumber.apiURL" = dw$api_base_url)
 
 # load source files
 source("functions/helper-functions.R", local = TRUE)
+source("functions/file-functions.R", local = TRUE)
+source("functions/hgnc-functions.R", local = TRUE)
+source("functions/database-functions.R", local = TRUE)
 
 # convert to memoise functions
 # Expire items in cache after 60 minutes
@@ -97,7 +102,9 @@ generate_tibble_fspec_mem <- memoise(generate_tibble_fspec,
 #* @apiLicense list(name = "CC BY 4.0",
 #* url = "https://creativecommons.org/licenses/by/4.0/")
 
-#* @apiTag panel Endpoint to get the current MorbidGenes Panel
+#* @apiTag panel Endpoints to get information from the current MorbidGenes Panel
+#* @apiTag upload Endpoints to submit new data to the database
+#* @apiTag authentication Endpoints related to authentication
 ##-------------------------------------------------------------------##
 ##-------------------------------------------------------------------##
 
@@ -155,10 +162,6 @@ function(req, res) {
     req$user_role <- user$user_role
     # and forward request
     plumber::forward()
-  } else if (req$REQUEST_METHOD == "POST" &&
-      (req$PATH_INFO == "/api/upload/csv")) {
-    # and forward request
-    plumber::forward()
   } else {
     if (is.null(req$HTTP_AUTHORIZATION)) {
       res$status <- 401 # Unauthorized
@@ -188,18 +191,37 @@ function(req, res) {
 ##-------------------------------------------------------------------##
 ## Panel endpoints
 
+#* Filter and Select Fields from All Panels
+#*
+#* This endpoint allows users to filter and select specific fields
+#* from all panels. It provides functionality for sorting, filtering,
+#* selecting fields, and more.
+#*
+#* # `Details`
+#* This is a Plumber endpoint function that retrieves panel
+#* information based on the provided parameters. Users can sort the
+#* output, apply filters, select specific fields, specify pagination
+#* parameters, and more. The endpoint fetches relevant panel data.
+#*
+#* # `Return`
+#* The function returns a cursor pagination object with links, meta
+#* information, and gene objects. For format 'xlsx', data is in xlsx.
+#*
 #* @tag panel
-#* allows filtering and field selection from all panels
 #* @serializer json list(na="string")
+#*
 #* @param sort:str  Output column to arrange output on.
-#* @param filter:str Comma separated list of filters to apply.
-#* @param fields:str Comma separated list of output columns.
+#* @param filter:str Filters to apply, separated by commas.
+#* @param fields:str Output columns, separated by commas.
 #* @param page_after:str Cursor after which entries are shown.
 #* @param page_size:str Page size in cursor pagination.
-#* @param fspec:str Fields to generate fied specification for.
-#* @response 200 A cursor pagination object with links, meta information and gene objects in the data field.
+#* @param fspec:str Fields for field specification.
+#* @param format:str Output format: 'json' or 'xlsx'.
+#*
+#* @response 200 Cursor pagination object with links, meta, and data.
 #* @response 500 Internal server error.
-#' @get /api/panel
+#*
+#* @get /api/panel
 function(req,
   res,
   sort = "symbol",
@@ -285,7 +307,7 @@ function(req,
         link),
       link == "null" ~ "null"
     )) %>%
-      pivot_wider(everything(), names_from = "type", values_from = "link")
+      pivot_wider(id_cols = everything(), names_from = "type", values_from = "link")
 
   # generate object to return
   return_list <- list(links = links,
@@ -320,10 +342,26 @@ function(req,
 }
 
 
+#* Retrieve Panel Information by HGNC ID
+#*
+#* This endpoint retrieves information for a gene in the current
+#* panel based on the provided HGNC ID.
+#*
+#* # `Details`
+#* This is a Plumber endpoint that fetches panel information for a
+#* gene based on its HGNC ID. The HGNC ID is decoded and used to
+#* query the database.
+#*
+#* # `Return`
+#* The function returns panel information for the specified gene.
+#* If not found, it may return an empty response or an error.
+#*
 #* @tag panel
-## get infos for a single gene in the current panel by hgnc_id
 #* @serializer json list(na="string")
-#' @get /api/panel/<hgnc_id>
+#*
+#* @param hgnc_id The HGNC ID of the gene for panel information.
+#*
+#* @get /api/panel/<hgnc_id>
 function(hgnc_id) {
 
   hgnc <- paste0("HGNC:", URLdecode(gsub("[^0-9.-]", "", hgnc_id)))
@@ -342,14 +380,199 @@ function(hgnc_id) {
 
 
 ##-------------------------------------------------------------------##
+## Upload endpoints
+
+#* Upload Gene List File
+#*
+#* This endpoint allows users to upload a gene list file to the server.
+#* It takes in a panel file and a config file, performs various checks,
+#* and updates the database accordingly.
+#*
+#* # `Details`
+#* This is a Plumber endpoint function that processes the uploaded gene
+#* list file. It checks if the file exists, writes the binary content
+#* to a temporary file, reads the file content, computes md5sum, and
+#* updates the database tables. Various error checks are performed
+#* to ensure data integrity.
+#*
+#* # `Return`
+#* The function returns appropriate status and messages based on the
+#* outcome of the upload and processing.
+#*
+#* @tag upload
+#* @serializer json list(na="string")
+#*
+#* @param panel_file:file Gzipped file containing panel content.
+#* @param config_file:file Config file with column configuration.
+#*
+#* @response 200 Successful file upload and processing.
+#* @response 400 File with the same version already exists or processing error.
+#* @response 401 Unauthorized if user is not authenticated.
+#*
+#* @post /api/upload/panel
+function(req, res, panel_file, config_file) {
+
+  # define user variables
+  upload_user_id <- req$user_id
+
+  # get file name
+  panel_file_name <- basename(names(panel_file))
+  print(check_filename_match(panel_file, config_file))
+
+  # generate tmp file path
+  tmp_file <- file.path("data", panel_file_name)
+
+  # check if file exists already and delete if so
+  if (file.exists(tmp_file)) {
+    file.remove(tmp_file)
+  }
+
+  # write binary content to file
+  writeBin(panel_file[[1]], tmp_file)
+
+  # Read file content
+  table <- read_delim(tmp_file,
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+  # compute md5sum of panel_file
+  file_md5sum <- md5sum(tmp_file)
+  print(file_md5sum)
+
+  # get mg_panel_version data from database
+  # this is used to check if the uploaded file is already in the database and newer
+  # we deselect the panel_id as we need to get this later from the first insert into mg_panel_version and
+  # it is managed by the database
+  mg_panel_version_table <- pool %>%
+    tbl("mg_panel_version") %>%
+    collect() %>%
+    select(-panel_id, -upload_user)
+
+  # get mg_source data from database
+  # this is used to check for novel sources (columns) and assign them a source_id
+  mg_source_table <- pool %>%
+    tbl("mg_source") %>%
+    collect()
+
+  # logic
+  # 1) update mg_panel_version table
+  # 2) update mg_source table
+  # 3) update mg_panel_genes_join table
+  # 4) get the panel_hgnc_id from the mg_panel_genes_join table
+  # 5) generate mg_panel_genes_source_join table
+  # TODO: use transactions: https://dbi.r-dbi.org/reference/transactions
+
+  # compute panel_version, panel_date from file name and is_current from database
+  file_version <- tmp_file %>%
+    as_tibble() %>%
+    separate(value, c("path", "file"), sep = "\\/") %>%
+    mutate(file_path = paste0(path, "/", file)) %>%
+    mutate(file_basename = str_remove_all(file, "\\.csv\\.gz")) %>%
+    separate(file_basename,
+      c("analysis", "version"),
+      sep = "_") %>%
+    separate(version,
+      c("panel_version", "panel_date"),
+      sep = "-") %>%
+    mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
+    mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
+    mutate(md5sum_import = md5sum(file_path)) %>%
+    dplyr::select(panel_version,
+    panel_date,
+    file_path,
+    md5sum_import) %>%
+    filter(str_detect(file_path, "MorbidGenesPanel"))
+
+    # check if ile is already in mg_panel_version table
+    if (file_version$panel_version %in% mg_panel_version_table$panel_version) {
+      res$status <- 400
+      res$body <- jsonlite::toJSON(auto_unbox = TRUE, list(
+      status = 400,
+      message = paste0("File with panel version ",
+        file_version$panel_version,
+        " already in database.")
+      ))
+      return(res)
+    } else {
+      # check if the file is newer than the ones in the database
+      # TODO: maybe add a flag to force setting a file as current
+      file_version_current <- bind_rows(mg_panel_version_table, file_version) %>%
+        mutate(is_current = (max(panel_date) == panel_date)) %>%
+        filter(panel_version == file_version$panel_version)
+    }
+
+  # filter table and replace NA with FALSE
+  # panel_id is not present as we need to get this from the first insert into mg_panel_version
+  # we also get the hgnc_id from the file to check if this matches the one in the database
+  # if it does not match we compute the hgnc_id from the symbol
+  table_filtered <- table %>%
+    filter(morbidscore != 0) %>%
+    select(symbol,
+      hgnc_id = id_hgnc,
+      hgmd_pathogenic_cutoff,
+      clinvar_pathogenic_cutoff,
+      manually_added,
+      panelapp,
+      panelapp_UK,
+      panelapp_australia,
+      sysndd,
+      omim_phenotype) %>%
+    replace(is.na(.), FALSE)
+
+  # compute hgnc_id from symbol
+  # this function is defined in the helper-functions.R script
+  # it currently uses the hgnc API to get the hgnc_id
+  # TODO: maybe speed this up by using our internal hgnc table
+  morbidgenes_panel_hngc <- table_filtered %>%
+    mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
+    select(hgnc_id,
+      hgmd_pathogenic_cutoff,
+      clinvar_pathogenic_cutoff,
+      manually_added,
+      panelapp,
+      panelapp_UK,
+      panelapp_australia,
+      sysndd,
+      omim_phenotype)
+
+  # add upload_user_id to file_version_current
+  file_version_current_user <- file_version_current %>%
+    mutate(upload_user = upload_user_id)
+
+}
+
+## Upload endpoints
+##-------------------------------------------------------------------##
+
+
+
+##-------------------------------------------------------------------##
 ## Authentication section
 
+#* User Login
+#*
+#* This endpoint authenticates users based on username and password.
+#* It's based on the example from 'https://github.com/jandix/sealr/'.
+#*
+#* # `Details`
+#* This is a Plumber endpoint function that checks if the provided username and
+#* password are valid. If the credentials are valid, a JWT token is returned.
+#* If not, appropriate error messages are returned.
+#*
+#* # `Return`
+#* If the credentials are valid, a JWT token is returned. Otherwise, an error
+#* message is returned.
+#*
 #* @tag authentication
-#* does user login
-## based on "https://github.com/
-## jandix/sealr/blob/master/examples/jwt_simple_example.R"
 #* @serializer json list(na="string")
-#' @get /api/auth/authenticate
+#*
+#* @param user_name The username provided for authentication.
+#* @param password The password provided for authentication.
+#*
+#* @response 200 JWT token if the authentication is successful.
+#* @response 401 Unauthorized if credentials are incorrect.
+#* @response 404 Invalid username or password format.
+#*
+#* @get /api/auth/authenticate
 function(req, res, user_name, password) {
 
   check_user <- user_name
@@ -402,10 +625,25 @@ function(req, res, user_name, password) {
 }
 
 
+#* User Authentication
+#*
+#* This endpoint authenticates users based on a provided JWT token.
+#*
+#* # `Details`
+#* This is a Plumber endpoint function that decodes the JWT token provided in
+#* the header and returns the user details if the token is valid.
+#*
+#* # `Return`
+#* If the JWT token is valid, user details are returned. Otherwise, an error
+#* message is returned.
+#*
 #* @tag authentication
-#* does user authentication
 #* @serializer json list(na="string")
-#' @get /api/auth/signin
+#*
+#* @response 200 User details if the JWT token is valid.
+#* @response 401 Unauthorized if the JWT token is invalid.
+#*
+#* @get /api/auth/signin
 function(req, res) {
   # load secret and convert to raw
   key <- charToRaw(dw$secret)
@@ -431,10 +669,26 @@ function(req, res) {
 }
 
 
+#* Refresh Authentication
+#*
+#* This endpoint refreshes the user's authentication based on a provided JWT
+#* token.
+#*
+#* # `Details`
+#* This is a Plumber endpoint function that decodes the JWT token provided in
+#* the header. If the token is valid, a new refreshed JWT token is returned.
+#*
+#* # `Return`
+#* If the JWT token is valid, a new JWT token is returned. Otherwise, an error
+#* message is returned.
+#*
 #* @tag authentication
-#* does authentication refresh
 #* @serializer json list(na="string")
-#' @get /api/auth/refresh
+#*
+#* @response 200 New JWT token if the original token is valid.
+#* @response 401 Unauthorized if the JWT token is invalid.
+#*
+#* @get /api/auth/refresh
 function(req, res) {
   # load secret and convert to raw
   key <- charToRaw(dw$secret)

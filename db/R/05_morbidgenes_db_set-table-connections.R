@@ -1,3 +1,5 @@
+# TODO: define column types for all tables
+# TODO: set constrains (is_current, is_active, ...)
 ############################################
 ## load libraries
 library(tidyverse)  ## needed for general table operations
@@ -10,14 +12,20 @@ library(config)     ## needed for config loading
 
 ############################################
 ## define relative script path
-subfolder_path <- "/db/R/"
+project_topic <- "morbidgenes"
+project_name <- "morbidgenes"
+script_path <- "/db/R/"
+
 ## read config
-config_vars_default <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "default")
-config_vars_db <- config::get(file = Sys.getenv("CONFIG_FILE"),
-    config = "db_setup")
+config_vars_proj <- config::get(file = Sys.getenv("CONFIG_FILE"),
+    config = project_topic)
+
 ## set working directory
-setwd(paste0(config_vars$projectsdir, subfolder_path))
+setwd(paste0(config_vars_proj$projectsdir, script_path))
+
+## load db config file
+config_vars_db <- config::get(file = "./config.yml",
+    config = "db_setup")
 ############################################
 
 

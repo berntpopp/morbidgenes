@@ -1,12 +1,13 @@
 #### This file holds analyses functions for the hgnc standardization
 
-#' Retrieve HGNC ID from previous symbol
+#' Retrieve HGNC ID from Previous Symbol
 #'
-#' This function retrieves the HGNC ID corresponding to a given previous symbol.
+#' @description
+#' Retrieves the HGNC ID for a provided previous symbol.
 #'
-#' @param symbol_input The previous symbol for which to retrieve the HGNC ID.
+#' @param symbol_input The prior symbol to retrieve the HGNC ID for.
 #'
-#' @return An integer representing the HGNC ID corresponding to the input previous symbol.
+#' @return Integer HGNC ID for the input previous symbol.
 #'
 #' @examples
 #' hgnc_id_from_prevsymbol("lysine (K)-specific methyltransferase 2B")
@@ -28,13 +29,14 @@ hgnc_id_from_prevsymbol <- function(symbol_input) {
 }
 
 
-#' Retrieve HGNC ID from alias symbol
+#' Retrieve HGNC ID from Alias Symbol
 #'
-#' This function retrieves the HGNC ID corresponding to a given alias symbol.
+#' @description
+#' Retrieves the HGNC ID for a provided alias symbol.
 #'
-#' @param symbol_input The alias symbol for which to retrieve the HGNC ID.
+#' @param symbol_input Alias symbol to retrieve the HGNC ID for.
 #'
-#' @return An integer representing the HGNC ID corresponding to the input alias symbol.
+#' @return Integer HGNC ID for the input alias symbol.
 #'
 #' @examples
 #' hgnc_id_from_aliassymbol("MLL2")
@@ -56,13 +58,14 @@ hgnc_id_from_aliassymbol <- function(symbol_input) {
 }
 
 
-#' Retrieve HGNC ID from symbol
+#' Retrieve HGNC ID from Symbol
 #'
-#' This function retrieves the HGNC ID corresponding to a given symbol or symbols.
+#' @description
+#' Retrieves the HGNC ID for a given symbol or multiple symbols.
 #'
-#' @param symbol_tibble A tibble containing the symbol(s) for which to retrieve the HGNC ID.
+#' @param symbol_tibble A tibble of symbols to get HGNC IDs for.
 #'
-#' @return A tibble with the HGNC ID(s) corresponding to the input symbol(s).
+#' @return A tibble of HGNC IDs for the input symbols.
 #'
 #' @examples
 #' symbol_tibble <- tibble(value = c("symbol1", "symbol2", "symbol3"))
@@ -70,7 +73,7 @@ hgnc_id_from_aliassymbol <- function(symbol_input) {
 #'
 #' @export
 hgnc_id_from_symbol <- function(symbol_tibble) {
-  symbol_list_tibble <- as_tibble(symbol_tibble) %>% select(symbol = value) %>% mutate(symbol = toupper(symbol))
+  symbol_list_tibble <- as_tibble(symbol_tibble) %>% dplyr::select(symbol = value) %>% mutate(symbol = toupper(symbol))
 
   symbol_request <- fromJSON(paste0("http://rest.genenames.org/search/symbol/", str_c(symbol_list_tibble$symbol, collapse = "+OR+")))
 
@@ -83,22 +86,21 @@ hgnc_id_from_symbol <- function(symbol_tibble) {
 
   return_tibble <- symbol_list_tibble %>% 
   left_join(hgnc_id_from_symbol, by = "symbol") %>%
-  select(hgnc_id)
+  dplyr::select(hgnc_id)
 
   return(return_tibble)
 }
 
 
-#' Parallelized function to retrieve HGNC ID from symbol
+#' Parallelized Function to Retrieve HGNC ID from Symbol
 #'
-#' This function retrieves the HGNC ID corresponding to symbols in parallel using
-#' grouped requests. It supports parallel processing by dividing the input into
-#' smaller groups and processing them concurrently.
+#' @description
+#' Retrieves the HGNC ID for symbols in parallel using grouped requests.
 #'
-#' @param input_tibble A tibble containing the symbols for which to retrieve the HGNC ID.
-#' @param request_max Maximum number of symbols to include in each grouped request (default: 150).
+#' @param input_tibble A tibble of symbols to get HGNC IDs for.
+#' @param request_max Max symbols per grouped request (default: 150).
 #'
-#' @return A vector of HGNC ID(s) corresponding to the input symbols.
+#' @return Vector of HGNC IDs for the input symbols.
 #'
 #' @examples
 #' input_tibble <- tibble(value = c("ARID1B", "GRIN2B", "NAA10"))
@@ -119,7 +121,7 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 
   input_tibble_request_repair <- input_tibble_request %>%
   filter(is.na(response)) %>%
-  select(value) %>%
+  dplyr::select(value) %>%
   unique() %>%
   rowwise() %>%
   mutate(response = hgnc_id_from_prevsymbol(value)) %>%
@@ -133,13 +135,14 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 }
 
 
-#' Retrieve symbol from HGNC ID
+#' Retrieve Symbol from HGNC ID
 #'
-#' This function retrieves the symbol corresponding to a given HGNC ID or IDs.
+#' @description
+#' Retrieves the symbol for a provided HGNC ID or multiple HGNC IDs.
 #'
-#' @param hgnc_id_tibble A tibble containing the HGNC ID(s) for which to retrieve the symbol.
+#' @param hgnc_id_tibble A tibble of HGNC IDs to get symbols for.
 #'
-#' @return A tibble with the symbol(s) corresponding to the input HGNC ID(s).
+#' @return A tibble of symbols for the input HGNC IDs.
 #'
 #' @examples
 #' hgnc_id_tibble <- tibble(value = c(123, 456, 789))
@@ -148,7 +151,7 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 #' @export
 symbol_from_hgnc_id <- function(hgnc_id_tibble) {
   hgnc_id_list_tibble <- as_tibble(hgnc_id_tibble) %>%
-    select(hgnc_id = value) %>%
+    dplyr::select(hgnc_id = value) %>%
     mutate(hgnc_id = as.integer(hgnc_id))
 
   hgnc_id_request <- fromJSON(paste0("http://rest.genenames.org/search/hgnc_id/", str_c(hgnc_id_list_tibble$hgnc_id, collapse = "+OR+")))
@@ -162,22 +165,21 @@ symbol_from_hgnc_id <- function(hgnc_id_tibble) {
 
   return_tibble <- hgnc_id_list_tibble %>% 
   left_join(hgnc_id_from_hgnc_id, by = "hgnc_id") %>%
-  select(symbol)
+  dplyr::select(symbol)
 
   return(return_tibble)
 }
 
 
-#' Parallelized function to retrieve symbol from HGNC ID
+#' Parallelized Function to Retrieve Symbol from HGNC ID
 #'
-#' This function retrieves the symbol corresponding to HGNC IDs in parallel using
-#' grouped requests. It supports parallel processing by dividing the input into
-#' smaller groups and processing them concurrently.
+#' @description
+#' Retrieves symbols for HGNC IDs in parallel using grouped requests.
 #'
-#' @param input_tibble A tibble containing the HGNC ID(s) for which to retrieve the symbol.
-#' @param request_max Maximum number of HGNC IDs to include in each grouped request (default: 150).
+#' @param input_tibble A tibble of HGNC IDs to get symbols for.
+#' @param request_max Max HGNC IDs per grouped request (default: 150).
 #'
-#' @return A vector of symbol(s) corresponding to the input HGNC ID(s).e
+#' @return Vector of symbols for the input HGNC IDs.
 #'
 #' @examples
 #' input_tibble <- tibble(value = c(123, 456, 789))

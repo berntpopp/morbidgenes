@@ -3,26 +3,26 @@
 // and https://github.com/nocookie-analytics/core/blob/2dc44215ee8335ce8cde790cad8e0c24019e3658/frontend/purgecss.conf.js
 // and https://gaganpreet.in/posts/vue-vuetify-performance/
 
-const IN_PRODUCTION = process.env.NODE_ENV === 'production';
+const IN_PRODUCTION = process.env.NODE_ENV === 'production'
 
 module.exports = {
   plugins: [
-    IN_PRODUCTION
-      && require('@fullhuman/postcss-purgecss')({
+    IN_PRODUCTION &&
+      require('@fullhuman/postcss-purgecss')({
         content: [
           './public/**/*.html',
-          './src/**/*.vue'
+          './src/**/*.vue',
         ],
-        defaultExtractor(content) {
+        defaultExtractor (content) {
           const contentWithoutStyleBlocks = content.replace(
             /<style[^]+?<\/style>/gi,
             '',
-          );
+          )
           return (
             contentWithoutStyleBlocks.match(
               /[A-Za-z0-9-_/:]*[A-Za-z0-9-_/]+/g,
             ) || []
-          );
+          )
         },
         keyframes: true,
         variables: true,
@@ -35,6 +35,9 @@ module.exports = {
             'v-main',
             'spacer',
             'button',
+            'input',
+            'select',
+            'textarea',
             'text-start',
             'sortable',
           ],
@@ -47,17 +50,17 @@ module.exports = {
             /^container.*/,
             /^v-((?!application).)*$/,
             /^theme--light.*/,
-            ///.*-transition/,
+            /// .*-transition/,
             /^justify-.*/,
             /swagger*/,
             /^p-[0-9]/,
             /^m-[0-9]/,
-            ///^text--*/,
-            ///--text$/,
+            /// ^text--*/,
+            /// --text$/,
             /^row-.*/,
-            ///^col-*/,
-            ///^v-row-*/,
-            ///^v-col-*/,
+            /// ^col-*/,
+            /// ^v-row-*/,
+            /// ^v-col-*/,
           ],
           greedy: [
             /v-list-item/,
@@ -89,4 +92,4 @@ module.exports = {
         },
       }),
   ],
-};
+}

@@ -34,6 +34,7 @@ Each table is then written to a gzipped CSV file in the results/ directory.
 - biomaRt
 - R.utils
 - config
+- this script requires sqlr installed from this forked repo https://github.com/berntpopp/sqlr
 
 ## Configuration
 

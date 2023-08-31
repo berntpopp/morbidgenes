@@ -1,7 +1,6 @@
-# this is a dummy config file, please copy this file to config.yml and replace variables accordingly
+# this is a dummy database config file, please copy this file to config.yml and replace variables accordingly
 default:
-  projectsdir: "<replace with path project>"
-  initial_user_pass: [<replace with random pass>,<replace with random pass>,<replace with random pass>,<replace with random pass>,<replace with random pass>]
+  project: morbidgenes
 db_setup:
   dbtype: mysql
   dbname: morbidgenes_db
