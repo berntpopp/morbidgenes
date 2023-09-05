@@ -110,3 +110,63 @@ correct_hgnc_id_and_symbol <- function(panel_tibble, pool, stringency = "strict"
 
   return(corrected_tibble)
 }
+
+
+#' Check and Update Source Information from a Config Tibble using DB Information
+#'
+#' @description
+#' This function checks and optionally updates the 'source_name' and 
+#' 'source_logic' columns in a given config tibble against the database.
+#'
+#' @param config_tibble A tibble containing 'source_name' and 'source_logic'.
+#' @param pool A database connection.
+#' @param overwrite Optional boolean to control behavior for 'source_logic'.
+#'
+#' @return 
+#' A tibble with updated 'source_id', 'source_name', 'source_logic', and 
+#' 'actions'.
+#'
+#' @examples
+#' # Assuming a database connection pool exists
+#' updated_config <- check_config_update_source(config_tibble, pool, overwrite = TRUE)
+#'
+#' @export
+check_config_update_source <- function(config_tibble, pool, overwrite = NULL) {
+  # Step 1: Get current mg_source from the database
+  mg_source_table <- pool %>%
+    tbl("mg_source") %>%
+    collect()
+
+  # Step 2 & 3: Check presence and logic of source_name in database
+  joined_sources <- left_join(config_tibble, mg_source_table, 
+                              by = "source_name", suffix = c(".input", ".db"))
+
+  if (nrow(joined_sources) > 0 && is.null(overwrite)) {
+    mismatched_logic <- filter(joined_sources, source_logic.input != source_logic.db)
+    if (nrow(mismatched_logic) > 0) {
+      stop("Mismatched source_logic found and 'overwrite' parameter is not set.")
+    }
+  }
+
+  # Step 4 & 5: Add source_id and control logic overwriting
+  final_tibble <- joined_sources %>%
+    mutate(
+      source_logic = case_when(
+        source_logic.input == source_logic.db ~ source_logic.input,
+        source_logic.input != source_logic.db & !is.null(overwrite) & overwrite ~ 
+          source_logic.input,
+        source_logic.input != source_logic.db & !is.null(overwrite) & !overwrite ~ 
+          source_logic.db,
+        TRUE ~ source_logic.input
+      ),
+      actions = case_when(
+        source_logic.input == source_logic.db ~ "none",
+        source_logic.input != source_logic.db & !is.null(overwrite) & overwrite ~ "put",
+        is.na(source_id) ~ "post",
+        TRUE ~ "none"
+      )
+    ) %>%
+    select(source_name, source_logic, source_id, actions)
+
+  return(final_tibble)
+}
