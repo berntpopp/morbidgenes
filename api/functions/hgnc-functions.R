@@ -139,6 +139,7 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 #'
 #' @description
 #' Retrieves the symbol for a provided HGNC ID or multiple HGNC IDs.
+#' Supports both integer HGNC IDs (e.g., 23336) and prefixed HGNC IDs (e.g., "HGNC:23336").
 #'
 #' @param hgnc_id_tibble A tibble of HGNC IDs to get symbols for.
 #'
@@ -147,28 +148,31 @@ hgnc_id_from_symbol_grouped <- function(input_tibble, request_max = 150) {
 #' @examples
 #' hgnc_id_tibble <- tibble(value = c(123, 456, 789))
 #' symbol_from_hgnc_id(hgnc_id_tibble)
+#' hgnc_id_tibble_with_prefix <- tibble(value = c("HGNC:123", "HGNC:456", "HGNC:789"))
+#' symbol_from_hgnc_id(hgnc_id_tibble_with_prefix)
 #'
 #' @export
 symbol_from_hgnc_id <- function(hgnc_id_tibble) {
   hgnc_id_list_tibble <- as_tibble(hgnc_id_tibble) %>%
     dplyr::select(hgnc_id = value) %>%
+    mutate(hgnc_id = str_replace(hgnc_id, "HGNC:", "")) %>%
     mutate(hgnc_id = as.integer(hgnc_id))
 
-  hgnc_id_request <- fromJSON(paste0("http://rest.genenames.org/search/hgnc_id/", str_c(hgnc_id_list_tibble$hgnc_id, collapse = "+OR+")))
+  hgnc_id_request <- jsonlite::fromJSON(paste0("http://rest.genenames.org/search/hgnc_id/", str_c(hgnc_id_list_tibble$hgnc_id, collapse = "+OR+")))
 
   hgnc_id_from_hgnc_id <- as_tibble(hgnc_id_request$response$docs)
 
   hgnc_id_from_hgnc_id <- hgnc_id_from_hgnc_id %>%
-  mutate(hgnc_id = if (exists('hgnc_id', where = hgnc_id_from_hgnc_id)) hgnc_id else NA) %>%
-  mutate(hgnc_id = if (exists('hgnc_id', where = hgnc_id_from_hgnc_id)) toupper(hgnc_id) else "") %>%
-  mutate(hgnc_id = as.integer(str_split_fixed(hgnc_id, ":", 2)[, 2]))
+    mutate(hgnc_id = ifelse(exists('hgnc_id', where = hgnc_id_from_hgnc_id), toupper(hgnc_id), NA)) %>%
+    mutate(hgnc_id = as.integer(str_split_fixed(hgnc_id, ":", 2)[, 2]))
 
   return_tibble <- hgnc_id_list_tibble %>% 
-  left_join(hgnc_id_from_hgnc_id, by = "hgnc_id") %>%
-  dplyr::select(symbol)
+    left_join(hgnc_id_from_hgnc_id, by = "hgnc_id") %>%
+    dplyr::select(symbol)
 
   return(return_tibble)
 }
+
 
 
 #' Parallelized Function to Retrieve Symbol from HGNC ID
