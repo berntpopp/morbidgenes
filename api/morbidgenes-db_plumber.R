@@ -434,10 +434,6 @@ function(req, res, panel_file, config_file) {
   # "read_upload_files"
   tables_upload_files <- read_upload_files(panel_file_dir, config_file_dir)
 
-  # compute md5sum of panel_file
-  file_md5sum <- md5sum(tmp_file)
-  print(file_md5sum)
-
   # compute panel_version, panel_date from file name and is_current from database
   # add upload_user_id to file_version_current
   # check if the uploaded panel file is already in the database and newer
@@ -449,13 +445,62 @@ function(req, res, panel_file, config_file) {
     upload_user_id,
     pool)
 
-  # logic for database update
+  # compute the mg_source table and actions
+  # use the validation function "check_config_update_source"
+  # TODO: the optional parameter overwrite_config is not yet implemented in the endpoint
+  updated_config <- check_config_update_source(tables_upload_files$yaml_tibble,
+    pool,
+    overwrite_config = TRUE)
+
+  ## define logic for database update
   # 1) update mg_panel_version table
   # 2) update mg_source table
   # 3) update mg_panel_genes_join table
   # 4) get the panel_hgnc_id from the mg_panel_genes_join table
   # 5) generate mg_panel_genes_source_join table
   # TODO: implement usage of transactions: https://dbi.r-dbi.org/reference/transactions
+
+  # 1)
+  # here we use put_db_panel_deactivation from database-functions.R
+  # to first set is_current to 0 for all panels
+  # and then we use put_db_panel_activation from database-functions.R
+  # to set is_current to 1 for the new panel
+  # based on the is_current value in the file_version_tibble computed before
+  # the return value should be the new or updated panel_id
+  # TODO: add logic for overwriting a panel with the same version
+
+  # 2)
+  # here we update the mg_source table using
+  # the updated_config tibble computed before
+  # the return value after database update 
+  # should be the updated mg_source table with all current source_id
+
+  # 3)
+  # here we update the mg_panel_genes_join table
+  # using the tables_upload_files$gene_list_tibble
+  # from which we select the columns hgnc_id
+  # and add the panel_id from step 1)
+  # the return value after database update
+  # should be the updated mg_panel_genes_join table
+  # with all current panel_hgnc_id
+
+  # 4)
+  # here we get the panel_hgnc_id from step 3)
+  # using the panel_id from step 1)
+  # and the tables_upload_files$gene_list_tibble
+  # we first compute a long version of the tibble
+  # where we replace the true/false values in the wide format
+  # with the panel_hgnc_id from step 3)
+  # and replace the previous column names in the wide format
+  # with the source_id from step 2)
+
+  # 5)
+  # here we update the mg_panel_genes_source_join table
+  # using the long tibble from step 4)
+  # the return value after database update
+  # should be the final endpoint response
+  # e.g. 200 if everything went well
+  # or respective error messages if not
 
 }
 

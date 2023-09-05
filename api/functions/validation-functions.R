@@ -120,7 +120,7 @@ correct_hgnc_id_and_symbol <- function(panel_tibble, pool, stringency = "strict"
 #'
 #' @param config_tibble A tibble containing 'source_name' and 'source_logic'.
 #' @param pool A database connection.
-#' @param overwrite Optional boolean to control behavior for 'source_logic'.
+#' @param overwrite_config Optional boolean to control behavior for 'source_logic'.
 #'
 #' @return 
 #' A tibble with updated 'source_id', 'source_name', 'source_logic', and 
@@ -128,10 +128,10 @@ correct_hgnc_id_and_symbol <- function(panel_tibble, pool, stringency = "strict"
 #'
 #' @examples
 #' # Assuming a database connection pool exists
-#' updated_config <- check_config_update_source(config_tibble, pool, overwrite = TRUE)
+#' updated_config <- check_config_update_source(config_tibble, pool, overwrite_config = TRUE)
 #'
 #' @export
-check_config_update_source <- function(config_tibble, pool, overwrite = NULL) {
+check_config_update_source <- function(config_tibble, pool, overwrite_config = NULL) {
   # Step 1: Get current mg_source from the database
   mg_source_table <- pool %>%
     tbl("mg_source") %>%
@@ -141,10 +141,10 @@ check_config_update_source <- function(config_tibble, pool, overwrite = NULL) {
   joined_sources <- left_join(config_tibble, mg_source_table, 
                               by = "source_name", suffix = c(".input", ".db"))
 
-  if (nrow(joined_sources) > 0 && is.null(overwrite)) {
+  if (nrow(joined_sources) > 0 && is.null(overwrite_config)) {
     mismatched_logic <- filter(joined_sources, source_logic.input != source_logic.db)
     if (nrow(mismatched_logic) > 0) {
-      stop("Mismatched source_logic found and 'overwrite' parameter is not set.")
+      stop("Mismatched source_logic found and 'overwrite_config' parameter is not set.")
     }
   }
 
@@ -153,15 +153,15 @@ check_config_update_source <- function(config_tibble, pool, overwrite = NULL) {
     mutate(
       source_logic = case_when(
         source_logic.input == source_logic.db ~ source_logic.input,
-        source_logic.input != source_logic.db & !is.null(overwrite) & overwrite ~ 
+        source_logic.input != source_logic.db & !is.null(overwrite_config) & overwrite_config ~ 
           source_logic.input,
-        source_logic.input != source_logic.db & !is.null(overwrite) & !overwrite ~ 
+        source_logic.input != source_logic.db & !is.null(overwrite_config) & !overwrite_config ~ 
           source_logic.db,
         TRUE ~ source_logic.input
       ),
       actions = case_when(
         source_logic.input == source_logic.db ~ "none",
-        source_logic.input != source_logic.db & !is.null(overwrite) & overwrite ~ "put",
+        source_logic.input != source_logic.db & !is.null(overwrite_config) & overwrite_config ~ "put",
         is.na(source_id) ~ "post",
         TRUE ~ "none"
       )
