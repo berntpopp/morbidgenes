@@ -23,6 +23,7 @@ library(coop)
 library(keyring)
 library(rlang)
 library(tools)      ## needed for md5sum
+library(yaml)       ## needed for yaml loading
 ##-------------------------------------------------------------------##
 
 
@@ -73,6 +74,7 @@ source("functions/helper-functions.R", local = TRUE)
 source("functions/file-functions.R", local = TRUE)
 source("functions/hgnc-functions.R", local = TRUE)
 source("functions/database-functions.R", local = TRUE)
+source("functions/validation-functions.R", local = TRUE)
 
 # convert to memoise functions
 # Expire items in cache after 60 minutes
@@ -415,128 +417,45 @@ function(req, res, panel_file, config_file) {
   # define user variables
   upload_user_id <- req$user_id
 
-  # get file name
+  # Extract the file basenames
   panel_file_name <- basename(names(panel_file))
-  print(check_filename_match(panel_file, config_file))
+  config_file_name <- basename(names(config_file))
 
-  # generate tmp file path
-  tmp_file <- file.path("data", panel_file_name)
+  # Check if the basenames match
+  print(check_filename_match(panel_file_name, config_file_name))
 
-  # check if file exists already and delete if so
-  if (file.exists(tmp_file)) {
-    file.remove(tmp_file)
-  }
+  # write binary content of the gene list and config file to directory
+  # and get the directory of the written files
+  # using the helper function "write_binary_to_file"
+  panel_file_dir <- write_binary_to_file(panel_file, panel_file_name)
+  config_file_dir <- write_binary_to_file(config_file, config_file_name)
 
-  # write binary content to file
-  writeBin(panel_file[[1]], tmp_file)
-
-  # Read file content
-  table <- read_delim(tmp_file,
-    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+  # read the content of both files using the helper function
+  # "read_upload_files"
+  tables_upload_files <- read_upload_files(panel_file_dir, config_file_dir)
 
   # compute md5sum of panel_file
   file_md5sum <- md5sum(tmp_file)
   print(file_md5sum)
 
-  # get mg_panel_version data from database
-  # this is used to check if the uploaded file is already in the database and newer
-  # we deselect the panel_id as we need to get this later from the first insert into mg_panel_version and
-  # it is managed by the database
-  mg_panel_version_table <- pool %>%
-    tbl("mg_panel_version") %>%
-    collect() %>%
-    select(-panel_id, -upload_user)
+  # compute panel_version, panel_date from file name and is_current from database
+  # add upload_user_id to file_version_current
+  # check if the uploaded panel file is already in the database and newer
+  # we the panel_id is deselect as we need to get this later from the first
+  # insert into mg_panel_version and it is managed by the database
+  # use the helper function "compute_panel_metadata"
+  # TODO: the optional parameter override_is_current is not yet implemented in the endpoint
+  file_version_tibble <- compute_panel_metadata(panel_file_dir,
+    upload_user_id,
+    pool)
 
-  # get mg_source data from database
-  # this is used to check for novel sources (columns) and assign them a source_id
-  mg_source_table <- pool %>%
-    tbl("mg_source") %>%
-    collect()
-
-  # logic
+  # logic for database update
   # 1) update mg_panel_version table
   # 2) update mg_source table
   # 3) update mg_panel_genes_join table
   # 4) get the panel_hgnc_id from the mg_panel_genes_join table
   # 5) generate mg_panel_genes_source_join table
-  # TODO: use transactions: https://dbi.r-dbi.org/reference/transactions
-
-  # compute panel_version, panel_date from file name and is_current from database
-  file_version <- tmp_file %>%
-    as_tibble() %>%
-    separate(value, c("path", "file"), sep = "\\/") %>%
-    mutate(file_path = paste0(path, "/", file)) %>%
-    mutate(file_basename = str_remove_all(file, "\\.csv\\.gz")) %>%
-    separate(file_basename,
-      c("analysis", "version"),
-      sep = "_") %>%
-    separate(version,
-      c("panel_version", "panel_date"),
-      sep = "-") %>%
-    mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
-    mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
-    mutate(md5sum_import = md5sum(file_path)) %>%
-    dplyr::select(panel_version,
-    panel_date,
-    file_path,
-    md5sum_import) %>%
-    filter(str_detect(file_path, "MorbidGenesPanel"))
-
-    # check if ile is already in mg_panel_version table
-    if (file_version$panel_version %in% mg_panel_version_table$panel_version) {
-      res$status <- 400
-      res$body <- jsonlite::toJSON(auto_unbox = TRUE, list(
-      status = 400,
-      message = paste0("File with panel version ",
-        file_version$panel_version,
-        " already in database.")
-      ))
-      return(res)
-    } else {
-      # check if the file is newer than the ones in the database
-      # TODO: maybe add a flag to force setting a file as current
-      file_version_current <- bind_rows(mg_panel_version_table, file_version) %>%
-        mutate(is_current = (max(panel_date) == panel_date)) %>%
-        filter(panel_version == file_version$panel_version)
-    }
-
-  # filter table and replace NA with FALSE
-  # panel_id is not present as we need to get this from the first insert into mg_panel_version
-  # we also get the hgnc_id from the file to check if this matches the one in the database
-  # if it does not match we compute the hgnc_id from the symbol
-  table_filtered <- table %>%
-    filter(morbidscore != 0) %>%
-    select(symbol,
-      hgnc_id = id_hgnc,
-      hgmd_pathogenic_cutoff,
-      clinvar_pathogenic_cutoff,
-      manually_added,
-      panelapp,
-      panelapp_UK,
-      panelapp_australia,
-      sysndd,
-      omim_phenotype) %>%
-    replace(is.na(.), FALSE)
-
-  # compute hgnc_id from symbol
-  # this function is defined in the helper-functions.R script
-  # it currently uses the hgnc API to get the hgnc_id
-  # TODO: maybe speed this up by using our internal hgnc table
-  morbidgenes_panel_hngc <- table_filtered %>%
-    mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
-    select(hgnc_id,
-      hgmd_pathogenic_cutoff,
-      clinvar_pathogenic_cutoff,
-      manually_added,
-      panelapp,
-      panelapp_UK,
-      panelapp_australia,
-      sysndd,
-      omim_phenotype)
-
-  # add upload_user_id to file_version_current
-  file_version_current_user <- file_version_current %>%
-    mutate(upload_user = upload_user_id)
+  # TODO: implement usage of transactions: https://dbi.r-dbi.org/reference/transactions
 
 }
 

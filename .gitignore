@@ -1,3 +1,10 @@
+# vs code settings
+.vscode/
+
+# erroneous fodlers
+node_modules/
+vue-project/
+
 ## Docker
 # ssl key files
 app/docker/nginx/cert.pem

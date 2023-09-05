@@ -1,0 +1,8 @@
+hgmd_pathogenic_cutoff: "filter: DM > 4, file: HGMD.vcf.gz"
+clinvar_pathogenic_cutoff: "dummy"
+omim_phenotype: "dummy"
+panelapp: "dummy"
+panelapp_UK: "dummy"
+panelapp_australia: "dummy"
+sysndd: "dummy"
+manually_added: "dummy"
