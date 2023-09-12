@@ -50,34 +50,36 @@ morbidgenes_db <- dbConnect(RMariaDB::MariaDB(),
 ## make the primary keys auto increment
 # panel_id in mg_panel_version
 ## set default value to 0 for primary keys auto incrementing
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY panel_id int auto_increment;")
-dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY panel_id int NOT NULL DEFAULT 0;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY panel_id int AUTO_INCREMENT;")
 dbClearResult(rs)
 
 # panel_hgnc_id in mg_panel_genes_join
 ## set default value to 0 for primary keys auto incrementing
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_hgnc_id int auto_increment;")
-dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_hgnc_id int NOT NULL DEFAULT 0;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY COLUMN panel_hgnc_id int AUTO_INCREMENT;")
 dbClearResult(rs)
 
 # panel_hgnc_source_id in mg_panel_genes_source_join
 ## set default value to 0 for primary keys auto incrementing
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_source_id int auto_increment;")
-dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_source_id int NOT NULL DEFAULT 0;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_source_id int AUTO_INCREMENT;")
 dbClearResult(rs)
 
 # source_id in mg_source
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int auto_increment;")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int NOT NULL DEFAULT 0;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int AUTO_INCREMENT;")
 dbClearResult(rs)
 
 # user_id in user
 ## set default value to 0 for primary keys auto incrementing
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int auto_increment;")
-dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int NOT NULL DEFAULT 0;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int AUTO_INCREMENT;")
 dbClearResult(rs)
 
 ############################################
