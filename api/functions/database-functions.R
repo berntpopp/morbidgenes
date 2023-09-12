@@ -149,7 +149,7 @@ update_mg_source <- function(source_tibble, pool) {
   if (nrow(post_entries) > 0) {
     tryCatch(
       {
-        dbWriteTable(pool, "mg_source", post_entries, 
+        dbWriteTable(pool, "mg_source", post_entries,
                      fields = c("source_name", "source_logic"), append = TRUE)
         status_messages[["post_status"]] <- list(code = 200, message = "New entries added successfully.")
       },
@@ -199,4 +199,41 @@ update_mg_source <- function(source_tibble, pool) {
 
   # Return the status messages and the updated table
   return(list(status_messages = status_messages, updated_table = updated_mg_source_table))
+}
+
+
+#' Update mg_panel_genes_join Table with New Panel Data
+#'
+#' @description
+#' This function takes a panel ID and a long format CSV tibble as inputs, selects unique HGNC ID values, adds the panel ID, and then posts this data to the "mg_panel_genes_join" table in the database.
+#'
+#' @param panel_id An integer representing the panel ID.
+#' @param csv_tibble_long A long format tibble generated from the csv tibble with the help of `convert_panel_to_long_format` function.
+#' @param pool The database connection pool.
+#'
+#' @return 
+#' A message indicating the success or failure of the operation.
+#'
+#' @examples
+#' # Assuming pool is a valid database connection pool and csv_tibble_long is the long format tibble
+#' update_mg_panel_genes_join(panel_id = 1, csv_tibble_long, pool)
+#'
+#' @export
+update_mg_panel_genes_join <- function(panel_id, csv_tibble_long, pool) {
+  # Step 1: Select unique hgnc_id values
+  unique_hgnc_ids <- csv_tibble_long %>%
+    dplyr::select(hgnc_id) %>%
+    dplyr::distinct()
+
+  # Step 2: Add panel_id column
+  data_to_post <- unique_hgnc_ids %>%
+    dplyr::mutate(panel_id = panel_id)
+
+  # Step 3: Post the data to the database
+  tryCatch({
+    dbWriteTable(pool, "mg_panel_genes_join", value = data_to_post, append = TRUE, row.names = FALSE)
+    message("Data successfully posted to the database.")
+  }, error = function(e) {
+    message("Failed to post data to the database: ", e$message)
+  })
 }
