@@ -77,10 +77,10 @@ results_panels <- results_csv_table %>%
   rowwise() %>%
   mutate(panel_list = list(read_csv2(file_path))) %>%
   ungroup() %>%
-  select(analysis, panel_id, panel_list) %>%
+  dplyr::select(analysis, panel_id, panel_list) %>%
   unnest(panel_list) %>%
   filter(morbidscore != 0) %>%
-  select(symbol,
+  dplyr::select(symbol,
     hgmd_pathogenic_cutoff,
     clinvar_pathogenic_cutoff,
     manually_added,
@@ -95,7 +95,7 @@ results_panels <- results_csv_table %>%
 # compute HGNC ID
 morbidgenes_panel_hngc <- results_panels %>%
   mutate(hgnc_id = paste0("HGNC:", hgnc_id_from_symbol_grouped(symbol))) %>%
-  select(hgnc_id,
+  dplyr::select(hgnc_id,
     hgmd_pathogenic_cutoff,
     clinvar_pathogenic_cutoff,
     manually_added,
@@ -111,7 +111,7 @@ morbidgenes_panel_hngc <- results_panels %>%
 ############################################
 ## create mg_panel_version table
 mg_panel_version <- results_csv_table %>%
-  select(panel_id,
+  dplyr::select(panel_id,
     panel_version,
     panel_date,
     file_path,
@@ -125,9 +125,9 @@ mg_panel_version <- results_csv_table %>%
 ############################################
 ## create mg_panel_genes_join table
 mg_panel_genes_join <- morbidgenes_panel_hngc %>%
-  select(hgnc_id, panel_id) %>%
+  dplyr::select(hgnc_id, panel_id) %>%
   mutate(panel_hgnc_id = row_number()) %>%
-  select(panel_hgnc_id, panel_id, hgnc_id)
+  dplyr::select(panel_hgnc_id, panel_id, hgnc_id)
 ############################################
 
 
@@ -135,7 +135,7 @@ mg_panel_genes_join <- morbidgenes_panel_hngc %>%
 ## create mg_panel_genes_source_join table
 mg_panel_genes_source <- morbidgenes_panel_hngc %>%
   mutate(panel_hgnc_id = row_number()) %>%
-  select(panel_hgnc_id,
+  dplyr::select(panel_hgnc_id,
     hgmd_pathogenic_cutoff,
     clinvar_pathogenic_cutoff,
     manually_added,
@@ -151,17 +151,17 @@ mg_panel_genes_source <- morbidgenes_panel_hngc %>%
 
 # TODO: add source_logic based on an input file
 mg_source <- mg_panel_genes_source %>%
-  select(source_name) %>%
+  dplyr::select(source_name) %>%
   unique() %>%
   mutate(source_id = row_number()) %>%
   mutate(source_logic = "dummy") %>%
-  select(source_id, source_name, source_logic)
+  dplyr::select(source_id, source_name, source_logic)
 
 mg_panel_genes_source_join <- mg_panel_genes_source %>%
   left_join(mg_source, by = "source_name") %>%
-  select(-source_name, -source_logic) %>%
+  dplyr::select(-source_name, -source_logic) %>%
   mutate(panel_hgnc_source_id = row_number()) %>%
-  select(panel_hgnc_source_id, panel_hgnc_id, source_id)
+  dplyr::select(panel_hgnc_source_id, panel_hgnc_id, source_id)
 ############################################
 
 
