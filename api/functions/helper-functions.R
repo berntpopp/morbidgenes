@@ -590,3 +590,44 @@ generate_tibble_fspec <- function(field_tibble, fspecInput) {
 
   return(return_data)
 }
+
+
+#' Convert a Wide Format Tibble to Long Format Based on Config Tibble
+#'
+#' @description
+#' This helper function takes a wide format panel tibble and a config yaml tibble as
+#' inputs. It filters the wide format tibble based on the `source_name` column
+#' in the config tibble and then converts it to a long format.
+#'
+#' @param csv_tibble 
+#' A wide format tibble containing gene data with several columns including
+#' `hgnc_id`.
+#' @param config_tibble 
+#' A tibble containing `source_name` and `source_logic` columns that dictate
+#' which columns from `csv_tibble` should be kept and transformed to long format.
+#'
+#' @return
+#' A long format tibble with columns: `hgnc_id`, `source_name`, and `presence`.
+#'
+#' @examples
+#' # Assuming csv_tibble and config_tibble are available
+#' long_format_tibble <- convert_panel_to_long_format(csv_tibble, config_tibble)
+#'
+convert_panel_to_long_format <- function(csv_tibble, config_tibble) {
+  # Get column names to keep based on config tibble
+  cols_to_keep <- intersect(names(csv_tibble), config_tibble$source_name)
+
+  # Add hgnc_id to the columns to keep
+  cols_to_keep <- c("hgnc_id", cols_to_keep)
+
+  # Filter the csv_tibble based on columns to keep
+  filtered_csv_tibble <- select(csv_tibble, all_of(cols_to_keep))
+
+  # Convert to long format
+  csv_tibble_long <- filtered_csv_tibble %>%
+    pivot_longer(cols = -hgnc_id, 
+                 names_to = "source_name", 
+                 values_to = "presence")
+
+  return(csv_tibble_long)
+}
