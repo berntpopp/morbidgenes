@@ -4,37 +4,25 @@
 #' Connects to a MariaDB database and sets the "is_current" status for all
 #' panels in the "mg_panel_version" table to 0 (deactivated).
 #'
+#' @param pool The database connection pool.
+#'
 #' @return A list containing the HTTP status and a message confirming the
 #' deactivation of all current panels.
 #'
 #' @examples
-#' result <- put_db_panel_deactivation()
+#' # Assuming pool is a valid database connection pool
+#' result <- put_db_panel_deactivation(pool)
 #' print(result)
 #'
 #' @export
-put_db_panel_deactivation <- function() {
+put_db_panel_deactivation <- function(pool) {
   ##-------------------------------------------------------------------##
-  # connect to database
-  morbidgenes_db <- dbConnect(RMariaDB::MariaDB(),
-                              dbname = dw$dbname,
-                              user = dw$user,
-                              password = dw$password,
-                              server = dw$server,
-                              host = dw$host,
-                              port = dw$port)
 
   # perform the panel update
-  dbExecute(morbidgenes_db, paste0("UPDATE mg_panel_version SET ",
-  "is_current = 0",
-  " WHERE is_current = 1;")
-  )
-
-  # disconnect from database
-  dbDisconnect(morbidgenes_db)
+  dbExecute(pool, "UPDATE mg_panel_version SET is_current = 0 WHERE is_current = 1;")
 
   # return OK
-  return(list(status = 200,
-    message = "OK. Status is_current reset for all panels."))
+  return(list(status = 200, message = "OK. Status is_current reset for all panels."))
   ##-------------------------------------------------------------------##
 }
 
@@ -46,18 +34,21 @@ put_db_panel_deactivation <- function() {
 #' panel in "mg_panel_version" to 1 (activated).
 #'
 #' @param panel_id ID of the panel to set as active.
+#' @param pool The database connection pool.
 #'
 #' @return A list with HTTP status and message confirming panel activation.
 #'
 #' @examples
-#' result <- put_db_panel_activation(123)
+#' # Assuming pool is a valid database connection pool
+#' result <- put_db_panel_activation(123, pool)
 #' print(result)
 #'
 #' @export
-put_db_panel_activation <- function(panel_id) {
+put_db_panel_activation <- function(panel_id, pool) {
   ##-------------------------------------------------------------------##
+
   # Deactivate all panels using the existing function
-  deactivation_result <- put_db_panel_deactivation()
+  deactivation_result <- put_db_panel_deactivation(pool)
 
   # Check if deactivation was successful
   if (deactivation_result$status != 200) {
@@ -69,29 +60,15 @@ put_db_panel_activation <- function(panel_id) {
     )
   }
 
-  # Connect to database for activation
-  morbidgenes_db <- dbConnect(
-    RMariaDB::MariaDB(),
-    dbname = dw$dbname,
-    user = dw$user,
-    password = dw$password,
-    server = dw$server,
-    host = dw$host,
-    port = dw$port
-  )
-
   # Activate specific panel
   dbExecute(
-    morbidgenes_db,
+    pool,
     paste0(
       "UPDATE mg_panel_version SET is_current = 1 WHERE panel_id = ",
       panel_id,
       ";"
     )
   )
-
-  # Disconnect from database
-  dbDisconnect(morbidgenes_db)
 
   # Return OK
   return(
@@ -107,18 +84,18 @@ put_db_panel_activation <- function(panel_id) {
 #' Update the `mg_source` Table with New Configurations
 #'
 #' @description
-#' This function updates the `mg_source` table based on the actions specified 
-#' in the source tibble. It can add new entries (post) and update existing 
-#' entries (put). It returns a list containing status messages for each 
+#' This function updates the `mg_source` table based on the actions specified
+#' in the source tibble. It can add new entries (post) and update existing
+#' entries (put). It returns a list containing status messages for each
 #' operation and the updated `mg_source` table.
 #'
 #' @param source_tibble A tibble containing source configurations with columns:
 #' 'source_name', 'source_logic', 'source_id', and 'actions'.
 #' @param pool A database connection.
 #'
-#' @return 
+#' @return
 #' A list containing two elements:
-#' - `status_messages`: A list of status messages and codes for each operation 
+#' - `status_messages`: A list of status messages and codes for each operation
 #'   (post, put, fetch, and overall status).
 #' - `updated_table`: A tibble of the updated `mg_source` table.
 #'
@@ -224,16 +201,18 @@ update_mg_panel_genes_join <- function(panel_id, csv_tibble_long, pool) {
   unique_hgnc_ids <- csv_tibble_long %>%
     dplyr::select(hgnc_id) %>%
     dplyr::distinct()
-
+  
   # Step 2: Add panel_id column
   data_to_post <- unique_hgnc_ids %>%
     dplyr::mutate(panel_id = panel_id)
-
+  
   # Step 3: Post the data to the database
   tryCatch({
     dbWriteTable(pool, "mg_panel_genes_join", value = data_to_post, append = TRUE, row.names = FALSE)
     message("Data successfully posted to the database.")
+    return(list(status_code = 200, message = "Data successfully posted to the database."))
   }, error = function(e) {
     message("Failed to post data to the database: ", e$message)
+    return(list(status_code = 500, message = paste("Failed to post data to the database:", e$message)))
   })
 }
