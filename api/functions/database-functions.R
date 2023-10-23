@@ -270,13 +270,14 @@ update_mg_source <- function(source_tibble, pool) {
 #'
 #' @description
 #' This function takes a panel ID and a long format CSV tibble as inputs, selects unique HGNC ID values, adds the panel ID, and then posts this data to the "mg_panel_genes_join" table in the database.
+#' It then returns the posted entries with database IDs.
 #'
 #' @param panel_id An integer representing the panel ID.
 #' @param csv_tibble_long A long format tibble generated from the csv tibble with the help of `convert_panel_to_long_format` function.
 #' @param pool The database connection pool.
 #'
 #' @return 
-#' A message indicating the success or failure of the operation.
+#' A list containing the status code, message, and a tibble of the posted entries with database IDs.
 #'
 #' @examples
 #' # Assuming pool is a valid database connection pool and csv_tibble_long is the long format tibble
@@ -296,10 +297,19 @@ update_mg_panel_genes_join <- function(panel_id, csv_tibble_long, pool) {
   # Step 3: Post the data to the database
   tryCatch({
     dbWriteTable(pool, "mg_panel_genes_join", value = data_to_post, append = TRUE, row.names = FALSE)
-    message("Data successfully posted to the database.")
-    return(list(status_code = 200, message = "Data successfully posted to the database."))
+    
+    # Step 4: Fetch the recently added entries with their IDs
+    last_id <- dbGetQuery(pool, "SELECT LAST_INSERT_ID() as last_id")$last_id
+    num_rows <- nrow(data_to_post)
+    start_id <- last_id - num_rows + 1
+
+    fetched_data <- dbGetQuery(pool, paste0("SELECT * FROM mg_panel_genes_join WHERE panel_hgnc_id BETWEEN ", start_id, " AND ", last_id))
+
+    return(list(status_code = 200, message = "Data successfully posted to the database.", posted_data = fetched_data))
   }, error = function(e) {
     message("Failed to post data to the database: ", e$message)
     return(list(status_code = 500, message = paste("Failed to post data to the database:", e$message)))
   })
+
 }
+
