@@ -297,7 +297,7 @@ update_mg_panel_genes_join <- function(panel_id, csv_tibble_long, pool) {
   # Step 3: Post the data to the database
   tryCatch({
     dbWriteTable(pool, "mg_panel_genes_join", value = data_to_post, append = TRUE, row.names = FALSE)
-    
+
     # Step 4: Fetch the recently added entries with their IDs
     last_id <- dbGetQuery(pool, "SELECT LAST_INSERT_ID() as last_id")$last_id
     num_rows <- nrow(data_to_post)
@@ -313,3 +313,72 @@ update_mg_panel_genes_join <- function(panel_id, csv_tibble_long, pool) {
 
 }
 
+
+#' Update the `mg_panel_genes_source_join` Table with New Data
+#'
+#' @description
+#' This function takes in three tibbles as inputs: `panels_genes_join_table`, 
+#' `sources_wide_table`, and `config_table`. It processes and reshapes the data,
+#' and then posts it to the "mg_panel_genes_source_join" table in the database.
+#' The function returns the posted entries along with their respective database IDs.
+#'
+#' @param panels_genes_join_table A tibble containing panel genes join data with columns:
+#' 'panel_hgnc_id', 'panel_id', and 'hgnc_id'.
+#' @param sources_wide_table A tibble in wide format containing source data.
+#' @param config_table A tibble containing configuration data with columns:
+#' 'source_id', 'source_name', and 'source_logic'.
+#' @param pool The database connection pool.
+#'
+#' @return 
+#' A list containing:
+#' - `status_code`: HTTP-like status code indicating success (200) or failure (500).
+#' - `message`: A message indicating the success or failure of the operation.
+#' - `posted_data`: A tibble of the posted entries with database IDs.
+#'
+#' @examples
+#' # Assuming pool is a valid database connection pool and the three tibbles are correctly formatted
+#' result <- update_mg_panel_genes_source_join(panels_genes_join_table, sources_wide_table, config_table, pool)
+#' # View the status code
+#' print(result$status_code)
+#' # View the message
+#' print(result$message)
+#' # View the posted data
+#' print(result$posted_data)
+#'
+#' @export
+update_mg_panel_genes_source_join <- function(panels_genes_join_table, sources_wide_table, config_table, pool) {
+
+  # Step 1: Join on hgnc_id
+  joined_data <- inner_join(panels_genes_join_table, sources_wide_table, by = "hgnc_id")
+
+  # Step 2: Replace TRUE values with panel_hgnc_id
+  source_cols <- setdiff(names(joined_data), c("symbol", "hgnc_id", "panel_hgnc_id", "panel_id"))
+  for (col in source_cols) {
+    joined_data[, col] <- ifelse(joined_data[, col] == TRUE, joined_data$panel_hgnc_id, NA)
+  }
+
+  # Step 3: Replace column names with source_id
+  col_mapping <- setNames(config_table$source_id, config_table$source_name)
+  names(joined_data)[names(joined_data) %in% names(col_mapping)] <- col_mapping[names(joined_data)[names(joined_data) %in% names(col_mapping)]]
+
+  # Step 4: Reshape data into long format
+  reshaped_data <- joined_data %>% 
+    select(-symbol, -hgnc_id, -panel_hgnc_id, -panel_id) %>%
+    pivot_longer(everything(), names_to = "source_id", values_to = "panel_hgnc_id", values_drop_na = TRUE)
+
+  # Step 5: Post the reshaped data to the database and fetch the recently added entries
+  tryCatch({
+    dbWriteTable(pool, "mg_panel_genes_source_join", value = reshaped_data, append = TRUE, row.names = FALSE)
+
+    # Fetch the recently added entries with their IDs
+    last_id <- dbGetQuery(pool, "SELECT LAST_INSERT_ID() as last_id")$last_id
+    num_rows <- nrow(reshaped_data)
+    start_id <- last_id - num_rows + 1
+    fetched_data <- dbGetQuery(pool, paste0("SELECT * FROM mg_panel_genes_source_join WHERE panel_hgnc_source_id BETWEEN ", start_id, " AND ", last_id))
+
+    return(list(status_code = 200, message = "Data successfully posted to the database.", posted_data = fetched_data))
+  }, error = function(e) {
+    message("Failed to post data to the database: ", e$message)
+    return(list(status_code = 500, message = paste("Failed to post data to the database:", e$message)))
+  })
+}
