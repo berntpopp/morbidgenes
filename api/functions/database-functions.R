@@ -81,6 +81,93 @@ put_db_panel_activation <- function(panel_id, pool) {
 }
 
 
+#' Update the `mg_panel_version` Table with New Configurations
+#'
+#' @description
+#' This function updates the `mg_panel_version` table based on the actions specified
+#' in the file version tibble. It can add new entries (post), update existing
+#' entries (put), and do nothing for "none" actions.
+#'
+#' @param file_version_tibble A tibble containing file version configurations.
+#' @param pool A database connection.
+#'
+#' @return
+#' A list containing two elements:
+#' - `status_messages`: A list of status messages and codes for each operation
+#'   (post, put, fetch, and overall status).
+#' - `updated_table`: A tibble of the updated `mg_panel_version` table.
+#'
+update_mg_panel_version <- function(file_version_tibble, pool) {
+
+  # Split the tibble based on actions
+  post_entries <- filter(file_version_tibble, actions == "post") %>% 
+    select(-actions)
+
+  put_entries <- filter(file_version_tibble, actions == "put")
+
+  # Initialize a list to store messages and status codes
+  status_messages <- list()
+
+  # Flag to track overall success
+  overall_success <- TRUE
+
+  # Update entries with action "post" (New entries)
+  if (nrow(post_entries) > 0) {
+    tryCatch(
+      {
+        dbWriteTable(pool, "mg_panel_version", post_entries, append = TRUE)
+        status_messages[["post_status"]] <- list(code = 200, message = "New entries added successfully.")
+      },
+      error = function(e) {
+        status_messages[["post_status"]] <- list(code = 500, message = paste("Error adding new entries:", e$message))
+        overall_success <- FALSE
+      }
+    )
+  }
+
+  # Update entries with action "put" (Existing entries to be updated)
+  if (nrow(put_entries) > 0) {
+    tryCatch(
+      {
+        # Assuming `panel_id` is the primary key for updates
+        dbExecute(pool, 
+                  "UPDATE mg_panel_version SET panel_version = ?, panel_date = ?, file_path = ?, md5sum_import = ?, is_current = ?, upload_user = ? WHERE panel_id = ?", 
+                  list(put_entries$panel_version, put_entries$panel_date, put_entries$file_path, put_entries$md5sum_import, put_entries$is_current, put_entries$upload_user, put_entries$panel_id))
+        status_messages[["put_status"]] <- list(code = 200, message = "Existing entries updated successfully.")
+      },
+      error = function(e) {
+        status_messages[["put_status"]] <- list(code = 500, message = paste("Error updating existing entries:", e$message))
+        overall_success <- FALSE
+      }
+    )
+  }
+
+  # Fetch the updated mg_panel_version table
+  updated_mg_panel_version_table <- NULL
+  tryCatch(
+    {
+      updated_mg_panel_version_table <- pool %>%
+        tbl("mg_panel_version") %>%
+        collect()
+    },
+    error = function(e) {
+      status_messages[["fetch_status"]] <- list(code = 500, message = paste("Error fetching updated table:", e$message))
+      overall_success <- FALSE
+    }
+  )
+
+  # Set overall status
+  if (overall_success) {
+    status_messages[["overall_status"]] <- list(code = 200, message = "Operation completed successfully.")
+  } else {
+    status_messages[["overall_status"]] <- list(code = 500, message = "Operation completed with errors.")
+  }
+
+  # Return the status messages and the updated table
+  return(list(status_messages = status_messages, updated_table = updated_mg_panel_version_table))
+}
+
+
 #' Update the `mg_source` Table with New Configurations
 #'
 #' @description
@@ -201,11 +288,11 @@ update_mg_panel_genes_join <- function(panel_id, csv_tibble_long, pool) {
   unique_hgnc_ids <- csv_tibble_long %>%
     dplyr::select(hgnc_id) %>%
     dplyr::distinct()
-  
+
   # Step 2: Add panel_id column
   data_to_post <- unique_hgnc_ids %>%
     dplyr::mutate(panel_id = panel_id)
-  
+
   # Step 3: Post the data to the database
   tryCatch({
     dbWriteTable(pool, "mg_panel_genes_join", value = data_to_post, append = TRUE, row.names = FALSE)
