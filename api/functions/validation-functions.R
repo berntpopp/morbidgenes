@@ -25,13 +25,47 @@
 #' compute_panel_metadata("path/to/file.csv.gz", "user1", pool, override_is_current = TRUE)
 #'
 #' @export
+
+#' Compute Panel Metadata
+#'
+#' @description
+#' Computes and returns metadata for a specified panel file. It compares the
+#' new panel data with the existing data in the database, determining the
+#' necessary actions ("post", "put", or "none") based on this comparison. It
+#' also assigns the `is_current` status and `upload_user` as per specified
+#' parameters or existing values.
+#'
+#' @param file_path
+#' A string specifying the full path of the file.
+#' @param upload_user
+#' A string specifying the upload user. Used to assign the `upload_user` value
+#' for new or updated records.
+#' @param pool
+#' A database connection pool object for fetching existing data and performing
+#' SQL operations.
+#' @param override_is_current
+#' Optional logical to override the `is_current` field for new or updated
+#' records. Default is NULL, where the field is determined based on existing
+#' data and the new panel date.
+#'
+#' @return
+#' A tibble with metadata, including `panel_id`, `panel_version`, `panel_date`,
+#' `file_path`, `md5sum_import`, `is_current`, `upload_user`, and an `actions`
+#' column indicating the necessary action ("post", "put", or "none") for each
+#' record.
+#'
+#' @examples
+#' # Assuming a database connection pool exists
+#' compute_panel_metadata("path/to/file.csv.gz", "user1", pool,
+#'                        override_is_current = TRUE)
+#'
+#' @export
 compute_panel_metadata <- function(file_path, upload_user, pool, override_is_current = NULL) {
 
   # Fetch existing data from the database
   mg_panel_version_table <- pool %>%
     tbl("mg_panel_version") %>%
-    collect() %>%
-    select(-panel_id, -upload_user)
+    collect()
 
   # Compute metadata from the file name
   file_version <- tibble(value = file_path) %>%
@@ -43,24 +77,44 @@ compute_panel_metadata <- function(file_path, upload_user, pool, override_is_cur
     mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
     mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
     mutate(md5sum_import = tools::md5sum(file_path)) %>%
-    select(panel_version, panel_date, file_path, md5sum_import) %>%
-    filter(str_detect(file_path, "MorbidGenesPanel"))
+    mutate(upload_user = upload_user) %>%
+    select(panel_version, panel_date, file_path, md5sum_import, upload_user)
 
-  # Check for existing versions in the database
-  if (file_version$panel_version %in% mg_panel_version_table$panel_version) {
-    stop(paste0("File with panel version ", file_version$panel_version, " already in database."))
-  } else {
-    # Determine if the file is current
-    file_version_current <- bind_rows(mg_panel_version_table, file_version) %>%
-      mutate(is_current = ifelse(!is.null(override_is_current), override_is_current, (max(panel_date) == panel_date))) %>%
-      filter(panel_version == file_version$panel_version)
-  }
+  # Join new data with existing data to identify new and unchanged records
+  joined_data <- left_join(file_version, mg_panel_version_table, by = "panel_version", suffix = c(".new", ".db"))
 
-  # Add upload_user to the tibble
-  file_version_current_user <- file_version_current %>%
-    mutate(upload_user = upload_user)
+  # Determine the necessary actions and set the is_current field
+  final_tibble <- joined_data %>%
+    mutate(
+      is_current = case_when(
+        !is.null(override_is_current) ~ override_is_current,
+        is.na(panel_id) ~ TRUE,
+        TRUE ~ is_current
+      ),
+      actions = case_when(
+        is.na(panel_id) ~ "post",
+        !is.na(panel_id) & panel_date.new != panel_date.db ~ "put",
+        TRUE ~ "none"
+      ),
+      upload_user = case_when(
+        actions %in% c("post", "put") ~ upload_user,
+        TRUE ~ upload_user.db
+      ),
+      panel_date = coalesce(panel_date.new, panel_date.db),
+      file_path = coalesce(file_path.new, file_path.db),
+      md5sum_import = coalesce(md5sum_import.new, md5sum_import.db)
+    ) %>%
+    select(panel_id, panel_version, panel_date, file_path, md5sum_import, is_current, upload_user, actions)
 
-  return(file_version_current_user)
+  # Get the data from the database that is unaffected by the new file data
+  unaffected_data <- anti_join(mg_panel_version_table, file_version, by = "panel_version") %>%
+    mutate(actions = "none")
+
+  # Union the unaffected data with the actions determined data to get the final tibble
+  final_tibble <- bind_rows(final_tibble, unaffected_data) %>%
+    arrange(panel_id)
+
+  return(final_tibble)
 }
 
 
