@@ -168,8 +168,10 @@ read_upload_files <- function(csv_file_path, yaml_file_path, stringency = "stric
   }
 
   # Filter CSV based on morbidscore
+  # Remove rows with morbidscore == 0
   csv_tibble_filtered <- csv_tibble %>%
-    filter(morbidscore != 0)
+    filter(morbidscore != 0) %>%
+    distinct()
 
   # Dynamically select columns based on yaml_tibble_long
   additional_cols <- intersect(names(csv_tibble_filtered), yaml_tibble_long$source_name)
@@ -187,8 +189,18 @@ read_upload_files <- function(csv_file_path, yaml_file_path, stringency = "stric
 
   # Final column selection and NA replacement
   cols_to_select <- c("symbol", "hgnc_id" = "id_hgnc", additional_cols)
+  # Select columns from csv_tibble_filtered
+  # Replace NA with FALSE
+  # Remove duplicate rows
+  # Group by hgnc_id
+  # Filter by first occurrence of hgnc_id
+  # this fixes the issue of multiple rows with same hgnc_id in the CSV file
   csv_tibble_selected <- dplyr::select(csv_tibble_filtered, dplyr::all_of(cols_to_select)) %>%
-    replace(is.na(.), FALSE)
+    replace(is.na(.), FALSE) %>%
+    distinct() %>%
+    group_by(hgnc_id) %>%
+    filter(rank(hgnc_id, ties.method = "first") == 1) %>%
+    ungroup()
 
   # Return list of tibbles
   return(list(csv_tibble = csv_tibble_selected, yaml_tibble = yaml_tibble_long))
