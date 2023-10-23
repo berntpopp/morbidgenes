@@ -3,25 +3,25 @@
 
 ##-------------------------------------------------------------------##
 # load libraries
-library(plumber)
-library(tidyverse)
-library(cowplot)
-library(DBI)
-library(RMariaDB)
-library(jsonlite)
-library(config)
-library(jose)
-library(RCurl)
-library(stringdist)
-library(xlsx)
-library(easyPubMed)
-library(rvest)
-library(lubridate)
-library(pool)
-library(memoise)
-library(coop)
-library(keyring)
-library(rlang)
+library(plumber)    ## needed for plumber
+library(tidyverse)  ## needed for tibble
+library(cowplot)    ## needed for plot
+library(DBI)        ## needed for database
+library(RMariaDB)   ## needed for database
+library(jsonlite)   ## needed for json
+library(config)     ## needed for config
+library(jose)       ## needed for jwt
+library(RCurl)      ## needed for curl
+library(stringdist) ## needed for stringdist
+library(xlsx)       ## needed for xlsx output
+library(easyPubMed) ## needed for get_pubmed_data
+library(rvest)      ## needed for html_table
+library(lubridate)  ## needed for as_datetime
+library(pool)       ## needed for dbPool
+library(memoise)    ## needed for memoise
+library(coop)       ## needed for as_attachment
+library(keyring)    ## needed for keyring
+library(rlang)      ## needed for parse_exprs
 library(tools)      ## needed for md5sum
 library(yaml)       ## needed for yaml loading
 ##-------------------------------------------------------------------##
@@ -421,8 +421,13 @@ function(req, res, panel_file, config_file) {
   panel_file_name <- basename(names(panel_file))
   config_file_name <- basename(names(config_file))
 
-  # Check if the basenames match
-  print(check_filename_match(panel_file_name, config_file_name))
+  # Check if the basenames match using the helper function "check_filename_match"
+  # validation step in the endpoint that returns 400 if not
+  if (!check_filename_match(panel_file_name, config_file_name)) {
+    res$status <- 400
+    res$body <- "The file names do not match."
+    res
+  }
 
   # write binary content of the gene list and config file to directory
   # and get the directory of the written files
@@ -434,16 +439,22 @@ function(req, res, panel_file, config_file) {
   # "read_upload_files"
   tables_upload_files <- read_upload_files(panel_file_dir, config_file_dir)
 
+  # correct the hgnc_id and symbol in the csv tibble
+  # using the helper function "correct_hgnc_id_and_symbol"
+  # from helper-functions.R
+  tables_upload_files$csv_tibble <- correct_hgnc_id_and_symbol(tables_upload_files$csv_tibble, pool)
+
   # compute panel_version, panel_date from file name and is_current from database
   # add upload_user_id to file_version_current
   # check if the uploaded panel file is already in the database and newer
   # we the panel_id is deselect as we need to get this later from the first
   # insert into mg_panel_version and it is managed by the database
-  # use the helper function "compute_panel_metadata"
+  # use the validation function "compute_panel_metadata"
   # TODO: the optional parameter override_is_current is not yet implemented in the endpoint
   file_version_tibble <- compute_panel_metadata(panel_file_dir,
     upload_user_id,
-    pool)
+    pool,
+    override_is_current = TRUE)
 
   # compute the mg_source table and actions
   # use the validation function "check_config_update_source"
@@ -461,47 +472,70 @@ function(req, res, panel_file, config_file) {
   # TODO: implement usage of transactions: https://dbi.r-dbi.org/reference/transactions
 
   # 1)
-  # here we use put_db_panel_deactivation from database-functions.R
-  # to first set is_current to 0 for all panels
-  # and then we use put_db_panel_activation from database-functions.R
-  # to set is_current to 1 for the new panel
-  # based on the is_current value in the file_version_tibble computed before
-  # the return value should be the new or updated panel_id
-  # TODO: add logic for overwriting a panel with the same version
+  # here we update the mg_source table using
+  # the file_version_tibble tibble computed before
+  # and the function update_mg_panel_version from database-functions.R
+  # the return value of this function after database update
+  # includes the updated mg_source table with all current source_id
+  # TODO: add if else statement to check if update was successful and return error if not
+
+  updated_file_version_response <- update_mg_panel_version(file_version_tibble, pool)
 
   # 2)
   # here we update the mg_source table using
   # the updated_config tibble computed before
-  # the return value after database update 
-  # should be the updated mg_source table with all current source_id
+  # and the function update_mg_source from database-functions.R
+  # the return value of this function after database update
+  # includes the updated mg_source table with all current source_id
+  # TODO: add if else statement to check if update was successful and return error if not
+
+  updated_config_response <- update_mg_source(updated_config, pool)
 
   # 3)
   # here we update the mg_panel_genes_join table
-  # using the tables_upload_files$gene_list_tibble
+  # using the tables_upload_files$csv_tibble and the
+  # tables_upload_files$yaml_tibble with the helper function
+  # "convert_panel_to_long_format" we first compute a long version
+  # we then use the function update_mg_panel_genes_join from database-functions.R
+  # in which we filter unique rows from the long tibble
   # from which we select the columns hgnc_id
   # and add the panel_id from step 1)
-  # the return value after database update
-  # should be the updated mg_panel_genes_join table
-  # with all current panel_hgnc_id
+  # TODO: return entries written to database in response
+
+  csv_tibble_long <- convert_panel_to_long_format(tables_upload_files$csv_tibble,
+    tables_upload_files$yaml_tibble)
+
+  # filter the panel_id of the panel to be uploaded using panel_file_dir
+  update_panel_id <- updated_file_version_response$updated_table %>%
+    filter(file_path == panel_file_dir) %>%
+    select(panel_id)
+
+  # update the mg_panel_genes_join table
+  # TODO: update update_mg_panel_genes_join to first delete old data if panel_id already in table
+  mg_panel_genes_join_update_response <- update_mg_panel_genes_join(update_panel_id$panel_id, csv_tibble_long, pool)
 
   # 4)
-  # here we get the panel_hgnc_id from step 3)
-  # using the panel_id from step 1)
-  # and the tables_upload_files$gene_list_tibble
+  # here we get the posted_data with the panel_hgnc_id from step 3)
+  # using the tables_upload_files$csv_tibble
   # we first compute a long version of the tibble
   # where we replace the true/false values in the wide format
   # with the panel_hgnc_id from step 3)
   # and replace the previous column names in the wide format
   # with the source_id from step 2)
-
-  # 5)
-  # here we update the mg_panel_genes_source_join table
+  # we then update the mg_panel_genes_source_join table
   # using the long tibble from step 4)
   # the return value after database update
   # should be the final endpoint response
   # e.g. 200 if everything went well
   # or respective error messages if not
+  # TODO: for panel updates delete old data from mg_panel_genes_source_join using the panel_hgnc_source_id filtered using the panel_hgnc_id from step 3)
 
+  mg_panel_genes_source_join_response <- update_mg_panel_genes_source_join(mg_panel_genes_join_update_response$posted_data,  tables_upload_files$csv_tibble, updated_config_response$updated_table, pool)
+
+  # TODO: check submission logic to keep old IDs in mg_panel_genes_source_join and mg_panel_genes_join if in new panel
+
+  return(list(status_code = mg_panel_genes_source_join_response$status_code,
+    message = mg_panel_genes_source_join_response$message))
 }
 
 ## Upload endpoints
