@@ -1,5 +1,5 @@
-# TODO: define column types for all tables
 # TODO: set constrains (is_current, is_active, ...)
+# TODO: https://dba.stackexchange.com/questions/197562/constraint-one-boolean-row-is-true-all-other-rows-false
 ############################################
 ## load libraries
 library(tidyverse)  ## needed for general table operations
@@ -47,6 +47,48 @@ morbidgenes_db <- dbConnect(RMariaDB::MariaDB(),
 
 
 ############################################
+## make the key compatible
+## make panel_id in all tables compatible as int
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_id int NOT NULL;")
+dbClearResult(rs)
+
+############################################
+## make panel_hgnc_id in all tables compatible as int
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
+dbClearResult(rs)
+
+############################################
+## make source_id in all tables compatible as int
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int NOT NULL;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY source_id int NOT NULL;")
+dbClearResult(rs)
+
+############################################
+## make user_ids in all tables compatible as int
+## and make the entry user required in all tables
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int;")
+dbClearResult(rs)
+
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY upload_user int NOT NULL;")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY upload_user int;")
+dbClearResult(rs)
+############################################
+
+
+############################################
+## make username, orcid and email unique in user table
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user ADD UNIQUE (user_name);")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user ADD UNIQUE (orcid);")
+dbClearResult(rs)
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user ADD UNIQUE (email);")
+dbClearResult(rs)
+############################################
+
+
+############################################
 ## make the primary keys auto increment
 # panel_id in mg_panel_version
 ## set default value to 0 for primary keys auto incrementing
@@ -81,34 +123,8 @@ rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_i
 dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int AUTO_INCREMENT;")
 dbClearResult(rs)
-
 ############################################
-## make panel_id in all tables compatible as int
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_id int NOT NULL;")
-dbClearResult(rs)
 
-############################################
-## make panel_hgnc_id in all tables compatible as int
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY panel_hgnc_id int NOT NULL;")
-dbClearResult(rs)
-
-############################################
-## make source_id in all tables compatible as int
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_source MODIFY source_id int NOT NULL;")
-dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_source_join MODIFY source_id int NOT NULL;")
-dbClearResult(rs)
-
-############################################
-## make user_ids in all tables compatible as int
-## and make the entry user required in all tables
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.user MODIFY user_id int;")
-dbClearResult(rs)
-
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY upload_user int NOT NULL;")
-dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version MODIFY upload_user int;")
-dbClearResult(rs)
 
 ############################################
 ## add foreign key constrains
@@ -127,6 +143,8 @@ dbClearResult(rs)
 
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_version ADD FOREIGN KEY (upload_user) REFERENCES morbidgenes_db.user(user_id);")
 dbClearResult(rs)
+############################################
+
 
 ############################################
 ## create views
@@ -157,7 +175,6 @@ rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view
         (`morbidgenes_db`.`mg_panel_version`
         JOIN `morbidgenes_db`.`mg_panel_genes_join` ON ((`morbidgenes_db`.`mg_panel_version`.`panel_id` = `morbidgenes_db`.`mg_panel_genes_join`.`panel_id`)))")
 dbClearResult(rs)
-
 
 # view_panel_genes_source
 rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view_panel_genes_source` AS
@@ -226,6 +243,8 @@ rs <- dbSendQuery(morbidgenes_db, "CREATE OR REPLACE VIEW `morbidgenes_db`.`view
         JOIN `morbidgenes_db`.`view_genes_hgnc` ON ((`morbidgenes_db`.`view_panel_genes`.`hgnc_id` = `morbidgenes_db`.`view_genes_hgnc`.`hgnc_id`)))
         JOIN `morbidgenes_db`.`view_panel_genes_source` ON ((`morbidgenes_db`.`view_panel_genes`.`panel_hgnc_id` = `morbidgenes_db`.`view_panel_genes_source`.`panel_hgnc_id`)))")
 dbClearResult(rs)
+############################################
+
 
 ############################################
 ## close database connection

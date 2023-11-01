@@ -24,7 +24,11 @@ Each table is then written to a gzipped CSV file in the results/ directory.
    - Each table is then imported into the MySQL database.
    - Finally, the database connection is closed.
 
-5. **05_morbidgenes_db_set-table-connections.R**
+5. **05_morbidgenes_db_set-table-data-types.R**
+   - This script connects to a MySQL database, modifies table structures, and creates several views in the database. It uses the tidyverse, DBI, RMariaDB, sqlr, and config libraries.
+   - The script requires a configuration file that specifies the database name, user, password, server, and port, which is set in the environment variable CONFIG_FILE.
+
+6. **06_morbidgenes_db_set-table-connections.R**
    - This script connects to a MySQL database, modifies table structures, and creates several views in the database. It uses the tidyverse, DBI, RMariaDB, sqlr, and config libraries.
    - The script requires a configuration file that specifies the database name, user, password, server, and port, which is set in the environment variable CONFIG_FILE.
 

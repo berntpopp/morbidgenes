@@ -114,11 +114,11 @@ dbClearResult(rs)
 ############################################
 ## set column types in mg_panel_genes_join table
 # panel_hgnc_id	int
-# panel_id	integer(10)
+# panel_id	integer
 # hgnc_id	varchar(10)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_hgnc_id int;")
 dbClearResult(rs)
-rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_id integer(10);")
+rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY panel_id integer;")
 dbClearResult(rs)
 rs <- dbSendQuery(morbidgenes_db, "ALTER TABLE morbidgenes_db.mg_panel_genes_join MODIFY hgnc_id varchar(10);")
 dbClearResult(rs)
