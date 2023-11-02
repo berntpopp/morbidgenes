@@ -45,7 +45,7 @@
 #' SQL operations.
 #' @param override_is_current
 #' Optional logical to override the `is_current` field for new or updated
-#' records. Default is NULL, where the field is determined based on existing
+#' records. Default is FALSE, where the field is determined based on existing
 #' data and the new panel date.
 #'
 #' @return
@@ -56,12 +56,12 @@
 #'
 #' @examples
 #' # Assuming a database connection pool exists
-#' compute_panel_metadata("path/to/file.csv.gz", "user1", pool,
+#' compute_panel_metadata("path/to/file.csv.gz", 1, pool,
 #'                        override_is_current = TRUE)
 #'
 #' @export
-compute_panel_metadata <- function(file_path, upload_user, pool, override_is_current = NULL) {
-
+compute_panel_metadata <- function(file_path, upload_user_input, pool, override_is_current = FALSE) {
+  #TODO: check cases where we override a panel
   # Fetch existing data from the database
   mg_panel_version_table <- pool %>%
     tbl("mg_panel_version") %>%
@@ -77,44 +77,45 @@ compute_panel_metadata <- function(file_path, upload_user, pool, override_is_cur
     mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
     mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
     mutate(md5sum_import = tools::md5sum(file_path)) %>%
-    mutate(upload_user = upload_user) %>%
+    mutate(upload_user = upload_user_input) %>%
     select(panel_version, panel_date, file_path, md5sum_import, upload_user)
 
   # Join new data with existing data to identify new and unchanged records
-  joined_data <- left_join(file_version, mg_panel_version_table, by = "panel_version", suffix = c(".new", ".db"))
-
-  # Determine the necessary actions and set the is_current field
-  final_tibble <- joined_data %>%
+  joined_data <- left_join(file_version, mg_panel_version_table, by = "panel_version", suffix = c(".new", ".db")) %>%
     mutate(
-      is_current = case_when(
-        !is.null(override_is_current) ~ override_is_current,
-        is.na(panel_id) ~ TRUE,
-        TRUE ~ is_current
-      ),
-      actions = case_when(
-        is.na(panel_id) ~ "post",
-        !is.na(panel_id) & panel_date.new != panel_date.db ~ "put",
-        TRUE ~ "none"
-      ),
-      upload_user = case_when(
-        actions %in% c("post", "put") ~ upload_user,
-        TRUE ~ upload_user.db
-      ),
       panel_date = coalesce(panel_date.new, panel_date.db),
       file_path = coalesce(file_path.new, file_path.db),
       md5sum_import = coalesce(md5sum_import.new, md5sum_import.db)
     ) %>%
-    select(panel_id, panel_version, panel_date, file_path, md5sum_import, is_current, upload_user, actions)
+    select(panel_id, panel_version, panel_date, file_path, md5sum_import, is_current, upload_user)
+
+  # Determine the necessary actions and set the is_current field
+  # logic to determine is_current:
+  # 1. If override_is_current is TRUE, use the submitted panel version
+  # 2. If override_is_current is FALSE, determined based on existing data and new panel date
+  final_tibble <- bind_rows(mg_panel_version_table, joined_data) %>%
+    mutate(
+      is_current = case_when(
+        !is.na(panel_id) & !override_is_current ~ 0,
+        is.na(panel_id) & !override_is_current ~ 1,
+        override_is_current & panel_version == file_version$panel_version ~ 1,
+      )
+    ) %>%
+    select(panel_id, panel_version, panel_date, file_path, md5sum_import, is_current, upload_user)
 
   # Get the data from the database that is unaffected by the new file data
-  unaffected_data <- anti_join(mg_panel_version_table, file_version, by = "panel_version") %>%
-    mutate(actions = "none")
+  affected_data <- anti_join(final_tibble, mg_panel_version_table, by = c("panel_version", "is_current")) %>%
+    mutate(
+      actions = case_when(
+        is.na(panel_id) ~ "post",
+        !is.na(panel_id) ~ "put"
+      ),
+      upload_user = case_when(
+        actions %in% c("post", "put") ~ upload_user_input
+    )
+  )
 
-  # Union the unaffected data with the actions determined data to get the final tibble
-  final_tibble <- bind_rows(final_tibble, unaffected_data) %>%
-    arrange(panel_id)
-
-  return(final_tibble)
+  return(affected_data)
 }
 
 
