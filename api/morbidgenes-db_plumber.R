@@ -454,7 +454,7 @@ function(req, res, panel_file, config_file) {
   file_version_tibble <- compute_panel_metadata(panel_file_dir,
     upload_user_id,
     pool,
-    override_is_current = TRUE)
+    override_is_current = FALSE)
 
   # compute the mg_source table and actions
   # use the validation function "check_config_update_source"
@@ -472,7 +472,8 @@ function(req, res, panel_file, config_file) {
   # TODO: implement usage of transactions: https://dbi.r-dbi.org/reference/transactions
 
   # 1)
-  # here we update the mg_source table using
+  # update mg_panel_version table:
+  # here we update the mg_panel_version table using
   # the file_version_tibble tibble computed before
   # and the function update_mg_panel_version from database-functions.R
   # the return value of this function after database update
@@ -482,6 +483,7 @@ function(req, res, panel_file, config_file) {
   updated_file_version_response <- update_mg_panel_version(file_version_tibble, pool)
 
   # 2)
+  # update mg_source table:
   # here we update the mg_source table using
   # the updated_config tibble computed before
   # and the function update_mg_source from database-functions.R
@@ -492,7 +494,7 @@ function(req, res, panel_file, config_file) {
   updated_config_response <- update_mg_source(updated_config, pool)
 
   # 3)
-  # here we update the mg_panel_genes_join table
+  # update the mg_panel_genes_join table
   # using the tables_upload_files$csv_tibble and the
   # tables_upload_files$yaml_tibble with the helper function
   # "convert_panel_to_long_format" we first compute a long version
@@ -514,7 +516,8 @@ function(req, res, panel_file, config_file) {
   # TODO: update update_mg_panel_genes_join to first delete old data if panel_id already in table
   mg_panel_genes_join_update_response <- update_mg_panel_genes_join(update_panel_id$panel_id, csv_tibble_long, pool)
 
-  # 4)
+  # 4) & 5)
+  # get the panel_hgnc_id from the mg_panel_genes_join table & generate mg_panel_genes_source_join table:
   # here we get the posted_data with the panel_hgnc_id from step 3)
   # using the tables_upload_files$csv_tibble
   # we first compute a long version of the tibble

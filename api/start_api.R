@@ -19,6 +19,7 @@ log_dir <- "logs"
 if (!fs::dir_exists(log_dir)) fs::dir_create(log_dir)
 log_appender(appender_file(tempfile("plumber_", log_dir, ".log")))
 
+# TODO: should this be a helper function?
 # helper function to handle empty string
 convert_empty <- function(string) {
   if (string == "") {

@@ -77,8 +77,7 @@ compute_panel_metadata <- function(file_path, upload_user_input, pool, override_
     mutate(panel_version = paste0(panel_version, "-", panel_date)) %>%
     mutate(panel_date = as.Date(panel_date, format = "%Y%m%d")) %>%
     mutate(md5sum_import = tools::md5sum(file_path)) %>%
-    mutate(upload_user = upload_user_input) %>%
-    select(panel_version, panel_date, file_path, md5sum_import, upload_user)
+    select(panel_version, panel_date, file_path, md5sum_import)
 
   # Join new data with existing data to identify new and unchanged records
   joined_data <- left_join(file_version, mg_panel_version_table, by = "panel_version", suffix = c(".new", ".db")) %>%
@@ -87,7 +86,7 @@ compute_panel_metadata <- function(file_path, upload_user_input, pool, override_
       file_path = coalesce(file_path.new, file_path.db),
       md5sum_import = coalesce(md5sum_import.new, md5sum_import.db)
     ) %>%
-    select(panel_id, panel_version, panel_date, file_path, md5sum_import, is_current, upload_user)
+    select(panel_id, panel_version, panel_date, file_path, md5sum_import, is_current)
 
   # Determine the necessary actions and set the is_current field
   # logic to determine is_current:
