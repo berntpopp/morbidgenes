@@ -5,30 +5,6 @@
 #' Compute Panel Metadata
 #'
 #' @description
-#' This function computes and returns metadata for a given panel file.
-#'
-#' @param file_path 
-#' Character string specifying the full path of the file.
-#' @param upload_user 
-#' Character string specifying the upload user.
-#' @param pool
-#' A database connection.
-#' @param override_is_current
-#' Optional logical value to override the is_current field. Default is NULL.
-#'
-#' @return
-#' A tibble containing metadata including panel_version, panel_date, file_path,
-#' md5sum_import, is_current, and upload_user.
-#'
-#' @examples
-#' # Assuming a database connection pool exists
-#' compute_panel_metadata("path/to/file.csv.gz", "user1", pool, override_is_current = TRUE)
-#'
-#' @export
-
-#' Compute Panel Metadata
-#'
-#' @description
 #' Computes and returns metadata for a specified panel file. It compares the
 #' new panel data with the existing data in the database, determining the
 #' necessary actions ("post", "put", or "none") based on this comparison. It

@@ -75,6 +75,8 @@ source("functions/file-functions.R", local = TRUE)
 source("functions/hgnc-functions.R", local = TRUE)
 source("functions/database-functions.R", local = TRUE)
 source("functions/validation-functions.R", local = TRUE)
+source("functions/jwt-functions.R", local = TRUE)
+source("functions/user-functions.R", local = TRUE)
 
 # convert to memoise functions
 # Expire items in cache after 60 minutes
@@ -569,9 +571,9 @@ function(req, res, panel_file, config_file) {
 #* @param user_name The username provided for authentication.
 #* @param password The password provided for authentication.
 #*
-#* @response 200 JWT token if the authentication is successful.
+#* @response 200 List containing the JWT token if the authentication is successful.
+#* @response 400 Bad Request if input validation fails.
 #* @response 401 Unauthorized if credentials are incorrect.
-#* @response 404 Invalid username or password format.
 #*
 #* @get /api/auth/authenticate
 function(req, res, user_name, password) {
@@ -579,49 +581,21 @@ function(req, res, user_name, password) {
   check_user <- user_name
   check_pass <- URLdecode(password)
 
-  # load secret and convert to raw
-  key <- charToRaw(dw$secret)
-
-  # check if user provided credentials
-      if (is.null(check_user) ||
-        nchar(check_user) < 5 ||
-        nchar(check_user) > 20 ||
-        is.null(check_pass) ||
-        nchar(check_pass) < 5 ||
-        nchar(check_pass) > 50) {
-      res$status <- 404
-      res$body <- "Please provide valid username and password."
-      res
-      }
-
-  # connect to database, find user in database and password is correct
-  user_filtered <- pool %>%
-    tbl("user") %>%
-    filter(user_name == check_user & password == check_pass & approved == 1) %>%
-    select(-password) %>%
-    collect() %>%
-    mutate(iat = as.numeric(Sys.time())) %>%
-    mutate(exp = as.numeric(Sys.time()) + dw$refresh)
-
-  # return answer depending on user credentials status
-  if (nrow(user_filtered) != 1) {
-    res$status <- 401
-    res$body <- "User or password wrong."
-    res
+  # Validate input
+  if (is.null(check_user) || nchar(check_user) < 5 || nchar(check_user) > 20 ||
+      is.null(check_pass) || nchar(check_pass) < 5 || nchar(check_pass) > 50) {
+    res$status <- 400
+    return(list(error = "Invalid username or password format."))
   }
 
-  if (nrow(user_filtered) == 1) {
-    claim <- jwt_claim(user_id = user_filtered$user_id,
-    user_name = user_filtered$user_name,
-    email = user_filtered$email,
-    user_role = user_filtered$user_role,
-    user_created = user_filtered$created_at,
-    orcid = user_filtered$orcid,
-    iat = user_filtered$iat,
-    exp = user_filtered$exp)
-
-    jwt <- jwt_encode_hmac(claim, secret = key)
-    jwt
+  # Authenticate and generate JWT
+  authenticated_user <- authenticate_user(check_user, check_pass, pool)
+  if (is.null(authenticated_user)) {
+    res$status <- 401
+    return(list(error = "Invalid username or password."))
+  } else {
+    jwt <- generate_jwt(authenticated_user, dw$secret, dw$refresh)
+    return(list(token = jwt))
   }
 }
 
@@ -652,8 +626,13 @@ function(req, res) {
   # load jwt from header
   jwt <- str_remove(req$HTTP_AUTHORIZATION, "Bearer ")
 
-  user <- jwt_decode_hmac(jwt, secret = key)
-  user$token_expired <- (user$exp < as.numeric(Sys.time()))
+  # Decode the JWT using the decode_jwt function
+  user <- tryCatch({
+    decode_jwt(jwt, dw$secret)
+  }, error = function(e) {
+    res$status <- 401
+    list(error = "Invalid or expired token")
+  })
 
   if (is.null(jwt) || user$token_expired) {
     res$status <- 401 # Unauthorized
@@ -663,7 +642,7 @@ function(req, res) {
       user_name = user$user_name,
       email = user$email,
       user_role = user$user_role,
-      user_created = user$user_created,
+      user_created = user$created_at,
       orcid = user$orcid,
       exp = user$exp))
   }
@@ -691,30 +670,24 @@ function(req, res) {
 #*
 #* @get /api/auth/refresh
 function(req, res) {
-  # load secret and convert to raw
-  key <- charToRaw(dw$secret)
-
   # load jwt from header
   jwt <- str_remove(req$HTTP_AUTHORIZATION, "Bearer ")
 
-  user <- jwt_decode_hmac(jwt, secret = key)
-  user$token_expired <- (user$exp < as.numeric(Sys.time()))
+  # Attempt to decode the JWT. If it's expired or invalid, catch the error.
+  user <- tryCatch({
+    decode_jwt(jwt, dw$secret)
+  }, error = function(e) {
+    res$status <- 401
+    list(error = "Invalid or expired token")
+  })
 
-  if (is.null(jwt) || user$token_expired) {
-    res$status <- 401 # Unauthorized
-    return(list(error = "Authentication not successful."))
+  # If the token is successfully decoded and not expired, generate a new one
+  if (!is.null(user) && !user$token_expired) {
+    jwt <- generate_jwt(user, dw$secret, dw$refresh)
+    list(token = jwt)  # It's good to have a key in your response for consistency
   } else {
-    claim <- jwt_claim(user_id = user$user_id,
-      user_name = user$user_name,
-      email = user$email,
-      user_role = user$user_role,
-      user_created = user$user_created,
-      orcid = user$orcid,
-      iat = as.numeric(Sys.time()),
-      exp = as.numeric(Sys.time()) + dw$refresh)
-
-    jwt <- jwt_encode_hmac(claim, secret = key)
-    jwt
+    res$status <- 401 # Unauthorized
+    list(error = "Token expired or authentication unsuccessful.")
   }
 }
 
